@@ -1,0 +1,865 @@
+[
+    {
+        "paper_id": "2503.11237v1_1",
+        "citekey": "Pan2023STELOCODER",
+        "claim": [
+            "TAB 4",
+            "CAPTION TAB4",
+            "CAPTION TAB4-1"
+        ],
+        "originalkey": "Karanjai2025COLLABORATIONIS",
+        "charts": [
+            "TAB 3",
+            "CAPTION TAB3",
+            "CAPTION TAB3-1"
+        ],
+        "label": "0",
+        "author": "Pan et al.(2023)"
+    },
+    {
+        "paper_id": "2503.11237v1_2",
+        "citekey": "Zhu2022XLCoST",
+        "claim": [
+            "TAB 4",
+            "CAPTION TAB4",
+            "CAPTION TAB4-1"
+        ],
+        "originalkey": "Karanjai2025COLLABORATIONIS",
+        "charts": [
+            "TAB 3",
+            "CAPTION TAB3",
+            "CAPTION TAB3-1"
+        ],
+        "label": "0",
+        "author": "Zhu et al.(2022)"
+    },
+    {
+        "paper_id": "1903.10238v1_1",
+        "citekey": "MikelArtetxe2018Arobust",
+        "claim": [
+            "TAB 2",
+            "CAPTION TAB2"
+        ],
+        "originalkey": "NoaYehezkelLubin2019AligningVector-spaces",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "0",
+        "author": " Artetxe et al., 2018b"
+    },
+    {
+        "paper_id": "2502.16796v1_1",
+        "citekey": "HaoWen2023AutoDroid",
+        "claim": [
+            "TAB 2",
+            "CAPTION TAB2"
+        ],
+        "originalkey": "YuxuanLiu2025MobileSteward",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "1",
+        "author": "[31]"
+    },
+    {
+        "paper_id": "2502.16796v1_2",
+        "citekey": "ChiZhang2023AppAgent",
+        "claim": [
+            "TAB 1",
+            "CAPTION TAB1"
+        ],
+        "originalkey": "YuxuanLiu2025MobileSteward",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "1",
+        "author": "[25]"
+    },
+    {
+        "paper_id": "2502.16796v1_3",
+        "citekey": "JunyangWang2024MOBILEAGENT",
+        "claim": [
+            "TAB 2",
+            "CAPTION TAB2"
+        ],
+        "originalkey": "YuxuanLiu2025MobileSteward",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "1",
+        "author": "[28]"
+    },
+    {
+        "paper_id": "2502.16796v1_4",
+        "citekey": "JunyangWang2024MobileAgentv2",
+        "claim": [
+            "TAB 1",
+            "CAPTION TAB1"
+        ],
+        "originalkey": "YuxuanLiu2025MobileSteward",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "1",
+        "author": "[51]"
+    },
+    {
+        "paper_id": "2502.16796v1_5",
+        "citekey": "MingzheXing2024understandingtheweak",
+        "claim": [
+            "TAB 3",
+            "CAPTION TAB3"
+        ],
+        "originalkey": "YuxuanLiu2025MobileSteward",
+        "charts": [
+            "TAB 4",
+            "CAPTION TAB4"
+        ],
+        "label": "1",
+        "author": "[58]"
+    },
+    {
+        "paper_id": "2502.16796v1_6",
+        "citekey": "HaoWen2023AutoDroid",
+        "claim": [
+            "TAB 2",
+            "CAPTION TAB2"
+        ],
+        "originalkey": "YuxuanLiu2025MobileSteward",
+        "charts": [
+            "TAB 4",
+            "CAPTION TAB4"
+        ],
+        "label": "1",
+        "author": "[31]"
+    },
+    {
+        "paper_id": "2502.16796v1_7",
+        "citekey": "WenyiHong2024CogAgent",
+        "claim": [
+            "TAB 3",
+            "CAPTION TAB3"
+        ],
+        "originalkey": "YuxuanLiu2025MobileSteward",
+        "charts": [
+            "TAB 4",
+            "CAPTION TAB4"
+        ],
+        "label": "1",
+        "author": "[22]"
+    },
+    {
+        "paper_id": "2502.16796v1_8",
+        "citekey": "ChiZhang2023AppAgent",
+        "claim": [
+            "TAB 1",
+            "CAPTION TAB1"
+        ],
+        "originalkey": "YuxuanLiu2025MobileSteward",
+        "charts": [
+            "TAB 4",
+            "CAPTION TAB4"
+        ],
+        "label": "1",
+        "author": "[25]"
+    },
+    {
+        "paper_id": "2502.16796v1_9",
+        "citekey": "JunyangWang2024MOBILEAGENT",
+        "claim": [
+            "TAB 2",
+            "CAPTION TAB2"
+        ],
+        "originalkey": "YuxuanLiu2025MobileSteward",
+        "charts": [
+            "TAB 4",
+            "CAPTION TAB4"
+        ],
+        "label": "1",
+        "author": "[28]"
+    },
+    {
+        "paper_id": "2503.23439v1_1",
+        "citekey": "EricEkstedt2022VoiceActivity",
+        "claim": [
+            "TAB "
+        ],
+        "originalkey": "HyunjongOK2025SpeculativeEndTrun",
+        "charts": [
+            "TAB 4",
+            "CAPTION TAB4",
+            "CAPTION TAB4-1"
+        ],
+        "label": "1",
+        "author": "Ekstedt and skantze, 2022"
+    },
+    {
+        "paper_id": "2503.23439v1_2",
+        "citekey": "JunyoungChung2014EmpiricalEvaluation",
+        "claim": [
+            "TAB "
+        ],
+        "originalkey": "HyunjongOK2025SpeculativeEndTrun",
+        "charts": [
+            "TAB 4",
+            "CAPTION TAB4",
+            "CAPTION TAB4-1"
+        ],
+        "label": "1",
+        "author": "Chung et al., 2014"
+    },
+    {
+        "paper_id": "2503.23439v1_3",
+        "citekey": "AlexeiBaevski2020wav2vec2.0",
+        "claim": [
+            "TAB "
+        ],
+        "originalkey": "HyunjongOK2025SpeculativeEndTrun",
+        "charts": [
+            "TAB 4",
+            "CAPTION TAB4",
+            "CAPTION TAB4-1"
+        ],
+        "label": "1",
+        "author": "Baevski et al., 2020"
+    },
+    {
+        "paper_id": "2503.23439v1_4",
+        "citekey": "EricEkstedt2022VoiceActivity",
+        "claim": [
+            "TAB "
+        ],
+        "originalkey": "HyunjongOK2025SpeculativeEndTrun",
+        "charts": [
+            "TAB 5",
+            "CAPTION TAB5",
+            "CAPTION TAB5-1"
+        ],
+        "label": "1",
+        "author": "Ekstedt and skantze, 2022"
+    },
+    {
+        "paper_id": "2503.23439v1_5",
+        "citekey": "JunyoungChung2014EmpiricalEvaluation",
+        "claim": [
+            "TAB "
+        ],
+        "originalkey": "HyunjongOK2025SpeculativeEndTrun",
+        "charts": [
+            "TAB 5",
+            "CAPTION TAB5",
+            "CAPTION TAB5-1"
+        ],
+        "label": "1",
+        "author": "Chung et al., 2014"
+    },
+    {
+        "paper_id": "2503.23439v1_6",
+        "citekey": "AlexeiBaevski2020wav2vec2.0",
+        "claim": [
+            "TAB "
+        ],
+        "originalkey": "HyunjongOK2025SpeculativeEndTrun",
+        "charts": [
+            "TAB 5",
+            "CAPTION TAB5",
+            "CAPTION TAB5-1"
+        ],
+        "label": "1",
+        "author": "Baevski et al., 2020"
+    },
+    {
+        "paper_id": "2305.13242_1",
+        "citekey": "Armand Joulin2017Bag of Tricks",
+        "claim": [
+            "TAB ",
+            "CAPTION TAB"
+        ],
+        "originalkey": "Yafu Li2024MAGE",
+        "charts": [
+            "TAB 3",
+            "CAPTION TAB3",
+            "CAPTION TAB3-1",
+            "CAPTION TAB3-2"
+        ],
+        "label": "1",
+        "author": "Joulinetal.,2017"
+    },
+    {
+        "paper_id": "2305.13242_2",
+        "citekey": "Sebastian Gehrmann2019GLTR",
+        "claim": [
+            "TAB ",
+            "CAPTION TAB"
+        ],
+        "originalkey": "Yafu Li2024MAGE",
+        "charts": [
+            "TAB 3",
+            "CAPTION TAB3",
+            "CAPTION TAB3-1",
+            "CAPTION TAB3-2"
+        ],
+        "label": "1",
+        "author": "Gehrmannetal.,2019"
+    },
+    {
+        "paper_id": "2305.13242_3",
+        "citekey": "Iz Beltagy2020Longformer",
+        "claim": [
+            "TAB ",
+            "CAPTION TAB"
+        ],
+        "originalkey": "Yafu Li2024MAGE",
+        "charts": [
+            "TAB 3",
+            "CAPTION TAB3",
+            "CAPTION TAB3-1",
+            "CAPTION TAB3-2"
+        ],
+        "label": "1",
+        "author": "Beltagyetal.,2020"
+    },
+    {
+        "paper_id": "2305.13242_4",
+        "citekey": "Eric Mitchell2023DetectGPT",
+        "claim": [
+            "TAB ",
+            "CAPTION TAB"
+        ],
+        "originalkey": "Yafu Li2024MAGE",
+        "charts": [
+            "TAB 3",
+            "CAPTION TAB3",
+            "CAPTION TAB3-1",
+            "CAPTION TAB3-2"
+        ],
+        "label": "1",
+        "author": "Mitchelletal.,2023"
+    },
+    {
+        "paper_id": "1912.03832v1_1",
+        "citekey": "DaojianZeng2014RelationClassification",
+        "claim": [
+            "TAB "
+        ],
+        "originalkey": "TapasNayak2019EffectiveAttention",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "1",
+        "author": "(Zeng et al., 2014)"
+    },
+    {
+        "paper_id": "1912.03832v1_2",
+        "citekey": "DaojianZeng2015Distant Supervision",
+        "claim": [
+            "TAB "
+        ],
+        "originalkey": "TapasNayak2019EffectiveAttention",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "1",
+        "author": "(Zeng et al., 2015)"
+    },
+    {
+        "paper_id": "1912.03832v1_3",
+        "citekey": "Yatian Shen2016Attention-Based",
+        "claim": [
+            "TAB "
+        ],
+        "originalkey": "TapasNayak2019EffectiveAttention",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "1",
+        "author": "(Shen and Huang, 2016)"
+    },
+    {
+        "paper_id": "1912.03832v1_4",
+        "citekey": "Sharmistha Jat2018Improving Distantly",
+        "claim": [
+            "TAB "
+        ],
+        "originalkey": "TapasNayak2019EffectiveAttention",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "1",
+        "author": "(Jat et al., 2017)"
+    },
+    {
+        "paper_id": "2503.14891v1_1",
+        "citekey": "JasonWei2022Chain-of",
+        "claim": [
+            "TAB "
+        ],
+        "originalkey": "HonglinLin2025MetaLadder",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "1",
+        "author": "Weietal.,2022"
+    },
+    {
+        "paper_id": "2503.14891v1_2",
+        "citekey": "ZhihanZhang2024LearnBeyond",
+        "claim": [
+            "TAB "
+        ],
+        "originalkey": "HonglinLin2025MetaLadder",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "1",
+        "author": "Zhangetal.,2024b)"
+    },
+    {
+        "paper_id": "2502.18653v1_1",
+        "citekey": "GuohaoLi2023CAMEL",
+        "claim": [
+            "TAB "
+        ],
+        "originalkey": "HediyehBaban2025EnhancingText",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "1",
+        "author": "Li et al., 2023"
+    },
+    {
+        "paper_id": "1910.04601v1_1",
+        "citekey": "Welbl2018ConstructingDatasets",
+        "claim": [
+            "TAB 5",
+            "CAPTION TAB5",
+            "CAPTION TAB5-1"
+        ],
+        "originalkey": "Inoue2019RC-QED",
+        "charts": [
+            "TAB 7",
+            "CAPTION TAB7"
+        ],
+        "label": "1",
+        "author": "Welbl et al., 2018"
+    },
+    {
+        "paper_id": "1910.04601v1_2",
+        "citekey": "Dhingra2018NeuralModels",
+        "claim": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "originalkey": "Inoue2019RC-QED",
+        "charts": [
+            "TAB 7",
+            "CAPTION TAB7"
+        ],
+        "label": "0",
+        "author": "Dhingra et al., 2018"
+    },
+    {
+        "paper_id": "1910.04601v1_3",
+        "citekey": "Bauer2019Commonsensefor",
+        "claim": [
+            "TAB 3",
+            "CAPTION TAB3",
+            "CAPTION TAB3-1"
+        ],
+        "originalkey": "Inoue2019RC-QED",
+        "charts": [
+            "TAB 7",
+            "CAPTION TAB7"
+        ],
+        "label": "0",
+        "author": "Bauer et al., 2018"
+    },
+    {
+        "paper_id": "1910.04601v1_4",
+        "citekey": "Cao2019QuestionAnswering",
+        "claim": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "originalkey": "Inoue2019RC-QED",
+        "charts": [
+            "TAB 7",
+            "CAPTION TAB7"
+        ],
+        "label": "0",
+        "author": "De Cao et al., 2019"
+    },
+    {
+        "paper_id": "1910.04601v1_5",
+        "citekey": "Zhong2019COARSE-GRAIN",
+        "claim": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "originalkey": "Inoue2019RC-QED",
+        "charts": [
+            "TAB 7",
+            "CAPTION TAB7"
+        ],
+        "label": "0",
+        "author": "Zhong et al., 2019"
+    },
+    {
+        "paper_id": "2024.acl-long.37_1",
+        "citekey": "Kolby Nottingham2021Modular Framework",
+        "claim": [
+            "TAB 1",
+            "CAPTION TAB1"
+        ],
+        "originalkey": "Haochen Shi2024OPEx",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "1",
+        "author": "Nottinghametal.,2021"
+    },
+    {
+        "paper_id": "2024.acl-long.37_2",
+        "citekey": "Valts Blukis2021APersistent",
+        "claim": [
+            "TAB ",
+            "CAPTION TAB"
+        ],
+        "originalkey": "Haochen Shi2024OPEx",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "1",
+        "author": "Blukisetal.,2022"
+    },
+    {
+        "paper_id": "2024.acl-long.37_3",
+        "citekey": "Michael Murray2022Following Natural",
+        "claim": [
+            "TAB 1",
+            "CAPTION TAB1"
+        ],
+        "originalkey": "Haochen Shi2024OPEx",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "0",
+        "author": "MurrayandCakmak,2022"
+    },
+    {
+        "paper_id": "2024.acl-long.37_4",
+        "citekey": "Xiaotian Liu2022APlanning based",
+        "claim": [
+            "TAB ",
+            "CAPTION TAB"
+        ],
+        "originalkey": "Haochen Shi2024OPEx",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "1",
+        "author": "Liuetal.,2022c"
+    },
+    {
+        "paper_id": "2024.acl-long.37_5",
+        "citekey": "Chan Hee Song2023LLM-Planner",
+        "claim": [
+            "TAB 1",
+            "CAPTION TAB1"
+        ],
+        "originalkey": "Haochen Shi2024OPEx",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "0",
+        "author": "Songetal.,2023"
+    },
+    {
+        "paper_id": "2024.acl-long.37_6",
+        "citekey": "So Yeon Min2022FILM",
+        "claim": [
+            "TAB 1",
+            "CAPTION TAB1"
+        ],
+        "originalkey": "Haochen Shi2024OPEx",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "0",
+        "author": "Minetal.,2021"
+    },
+    {
+        "paper_id": "2024.acl-long.37_7",
+        "citekey": "Mohit Shridhar2020ALFRED",
+        "claim": [
+            "TAB ",
+            "CAPTION TAB"
+        ],
+        "originalkey": "Haochen Shi2024OPEx",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "1",
+        "author": "Shridharetal.,2020a"
+    },
+    {
+        "paper_id": "2024.acl-long.37_8",
+        "citekey": "Kunal Pratap Singh2021Factorizing Perception",
+        "claim": [
+            "TAB ",
+            "CAPTION TAB"
+        ],
+        "originalkey": "Haochen Shi2024OPEx",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "1",
+        "author": "Singhetal.,2020"
+    },
+    {
+        "paper_id": "2024.acl-long.37_9",
+        "citekey": "Alexander Pashevich2021Episodic Transformer",
+        "claim": [
+            "TAB A1",
+            "CAPTION TABA1"
+        ],
+        "originalkey": "Haochen Shi2024OPEx",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "0",
+        "author": "Pashevichetal.,2021"
+    },
+    {
+        "paper_id": "2024.acl-long.37_10",
+        "citekey": "Van-Quang Nguyen2021Look Wide",
+        "claim": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "TAB 8",
+            "CAPTION TAB8"
+        ],
+        "originalkey": "Haochen Shi2024OPEx",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "0",
+        "author": "Nguyenetal.,2021"
+    },
+    {
+        "paper_id": "2505.17206v1_1",
+        "citekey": "ZhuowanLi2024RetrievalAugmented",
+        "claim": [
+            "TAB 1",
+            "CAPTION TAB1"
+        ],
+        "originalkey": "Chawla2025FB-RAG",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "1",
+        "author": "Li et al., 2024"
+    },
+    {
+        "paper_id": "2505.17206v1_2",
+        "citekey": "ZhuowanLi2024RetrievalAugmented",
+        "claim": [
+            "TAB 1",
+            "CAPTION TAB1"
+        ],
+        "originalkey": "Chawla2025FB-RAG",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2"
+        ],
+        "label": "0",
+        "author": "Li et al., 2024"
+    },
+    {
+        "paper_id": "2505.17206v1_3",
+        "citekey": "TanYu2024InDefense",
+        "claim": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "originalkey": "Chawla2025FB-RAG",
+        "charts": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "label": "1",
+        "author": "Yu et al., 2024"
+    },
+    {
+        "paper_id": "2505.17206v1_4",
+        "citekey": "TanYu2024InDefense",
+        "claim": [
+            "TAB 1",
+            "CAPTION TAB1",
+            "CAPTION TAB1-1"
+        ],
+        "originalkey": "Chawla2025FB-RAG",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2"
+        ],
+        "label": "0",
+        "author": "Yu et al., 2024"
+    },
+    {
+        "paper_id": "2503.15620v1_1",
+        "citekey": "Darshan2024GLIDER",
+        "claim": [
+            "TAB 4"
+        ],
+        "originalkey": "AustinXu2025DoesContext",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "0",
+        "author": "Deshpande et al., 2024"
+    },
+    {
+        "paper_id": "2503.15620v1_2",
+        "citekey": "SeungoneKim2024PROMETHEUS",
+        "claim": [
+            "TAB 3"
+        ],
+        "originalkey": "AustinXu2025DoesContext",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "0",
+        "author": "Kim et al., 2024"
+    },
+    {
+        "paper_id": "2503.15620v1_3",
+        "citekey": "JunsooPark2024OffsetBias",
+        "claim": [
+            "TAB 1"
+        ],
+        "originalkey": "AustinXu2025DoesContext",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "1",
+        "author": "Park et al., 2024"
+    },
+    {
+        "paper_id": "2503.15620v1_4",
+        "citekey": "Andrei2025AtlaSeleneMini",
+        "claim": [
+            "TAB 1"
+        ],
+        "originalkey": "AustinXu2025DoesContext",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "1",
+        "author": "Alexandru et al., 2025"
+    },
+    {
+        "paper_id": "2503.15620v1_5",
+        "citekey": "PeifengWang2024DIRECTJUDGEMENT",
+        "claim": [
+            "TAB 1"
+        ],
+        "originalkey": "AustinXu2025DoesContext",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "1",
+        "author": "Wang et al., 2024"
+    },
+    {
+        "paper_id": "2503.15620v1_6",
+        "citekey": "LlamaTeam2024Llama3",
+        "claim": [
+            "TAB 1"
+        ],
+        "originalkey": "AustinXu2025DoesContext",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "0",
+        "author": "Dubey et al., 2024"
+    },
+    {
+        "paper_id": "2503.15620v1_7",
+        "citekey": "DeepSeek2025DeepSeek-R1",
+        "claim": [
+            "TAB 1"
+        ],
+        "originalkey": "AustinXu2025DoesContext",
+        "charts": [
+            "TAB 2",
+            "CAPTION TAB2",
+            "CAPTION TAB2-1"
+        ],
+        "label": "0",
+        "author": "Guo et al., 2025"
+    }
+]
