@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # 配置基础路径
 CONFIG = {
     "base_path": "./TabRefError/citekeypdf",
-    "json_file": "./TabRefError/fold_0_train.json",
+    "json_file": "./TabRefError/fold_0_val.json",
     "originalkey_base_path": "./TabRefError/originalkey",
     "output_file": "./Qwen3-VL-Text_fold0_train.json",
     "batch_output_prefix": "./qwen3-vl-text_train_fold0_batch_",
