@@ -11,7 +11,7 @@ import traceback
 
 # path
 base_path = "./TabRefError/citekeypdf"
-json_file = "./TabRefError/biaoge.json"
+json_file = "./TabRefError/tabIndex.json"
 originalkey_base_path = "./TabRefError/originalkey"
 
 
@@ -206,7 +206,7 @@ def analyze_image(image_url, author=None, mode="citekey", paper_id=None):
 
 请直接返回JSON格式：
 {{
-  "description": "详细描述，包含所有关键数据、模型、指标、数据集"
+  "description": "详细描述，包含所有关键数据、模型、指标、数据集等"
 }}
 """
             else:
@@ -290,20 +290,20 @@ def semantic_comparison(claim, originalkey_item, author, paper_id=None):
             prompt = f"""你是一名严谨的学术审查员，请判断以下两部分内容是否语义匹配：
 
 【任务说明】
-- 内容A（引用内容，来自当前论文）："{claim}"
+- 内容A（被引文献）："{claim}"
 - 内容B（原始文献中与作者 "{author}" 相关的内容）："{author_content}"
 
 【评分规则】
 1. 核心匹配项：**数值（小数或%）、模型名称、数据集、评估指标**。
 2. 允许合理缩写（如 "BERT" vs "Bert-base", "ImageNet" vs "IN", "Accuracy" vs "Acc"）。
-3. 如果内容A **完整覆盖** 内容B中的 author 相关数据（数值一致、模型/数据集基本一致）→ 匹配成功，score ≥ 0.8。
-4. 如果内容A **部分缺失** author 相关数据（如缺少某个指标或数值）→ score 在 0.3~0.7 之间，按缺失程度扣分。
+3. 如果内容A **完整覆盖** 内容B中的 author 相关数据（数值一致、模型/数据集基本一致）→ 匹配成功，score = 1.0。
+4. 如果内容A **部分缺失** author 相关数据（如缺少某个指标或数值）→ score 在 0.1~0.9 之间，按缺失程度扣分。
 5. 如果内容A **完全未提及** author 相关内容 → score = 0.0。
 6. **不要关注内容B中与 author 无关的部分**。
 
 【输出要求】
 请返回严格JSON格式，包含：
-- "match": true/false（只要 score > 0.5 即可为 true）
+- "match": true/false
 - "score": 0.0~1.0 的浮点数
 - "explanation": 简明说明匹配/不匹配原因，指出缺失或一致的关键点
 
@@ -647,7 +647,6 @@ print(f"当前已处理条数: {last_counter}")
 with open(json_file, "r", encoding="utf-8") as f:
     data = json.load(f)
 
-#继续处理
 counter = last_counter
 for i, entry in enumerate(data[last_counter:], start=last_counter):
     try:
