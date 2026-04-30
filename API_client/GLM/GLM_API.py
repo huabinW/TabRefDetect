@@ -308,7 +308,6 @@ def semantic_comparison(claim, originalkey_item, author, paper_id=None):
 
 【输出要求】
 请返回严格JSON格式，包含：
-"match":true/false
 "score": 0.0~1.0的浮点数
 "explanation":简明说明匹配/不匹配原因，指出缺失或一致的关键点
 """
