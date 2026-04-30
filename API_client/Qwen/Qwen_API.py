@@ -197,8 +197,8 @@ def analyze_image(image_url, author=None, mode="citekey", paper_id=None):
         try:
             if mode == "citekey":
                 prompt = f"""请详细分析以下图片内容，特别注意以下几点：
-- 图片中包含的**所有数值**（如准确率、F1值、BLEU分数等），明确区分是**小数（如0.85）还是百分比（如85%）**，不可省略或混淆。
-- 涉及的**模型名称**（如 BERT, ResNet, Ours, Proposed Method 等）、**数据集名称**（如 ImageNet, COCO, SQuAD）、**评估指标**（如 Accuracy, ROUGE-L, mAP）。
+- 图片中包含的所有数值（如准确率、F1值、BLEU分数等），明确区分是小数（如0.85）还是百分比（如85%），不可省略。
+- 涉及的模型名称（如 BERT, ResNet, Ours, Proposed Method 等）、数据集名称（如 ImageNet, COCO, SQuAD）、评估指标（如 Accuracy, ROUGE-L, mAP）。
 - 如果是表格，请逐行提取关键数据，尤其是模型对比结果。
 - 不需要提取与特定作者相关的内容（因为这是当前论文的图表）。
 - 描述应尽可能完整、准确，不要遗漏任何关键数据。
@@ -215,7 +215,7 @@ def analyze_image(image_url, author=None, mode="citekey", paper_id=None):
 - 如果图片中包含表格，请尽量提取表格中的关键数据，并标注与作者 "{author}" 的关联性。
 - 关注模型名称、数据集、评估指标等关键信息。
 
-**示例（仅作格式参考，请勿照搬内容）**：
+示例（仅作格式参考）**：
 "AdaptCap (Wang et al., 2023) 在 COCO-Caption 上：BLEU-4=38.5, METEOR=28.9, CIDEr=124.7"
 
 返回以下字段：
