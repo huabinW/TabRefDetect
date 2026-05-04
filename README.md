@@ -24,7 +24,7 @@ TabRefDetect is an automated framework designed to detect whether a citing paper
 
 We introduce **TabRefError**, a human-annotated dataset for numerical discrepancy detection in cross-document table citations. It contains numerical alignment samples across diverse table types.
 
-> ⚠️ **Note:** Since our human annotations cannot guarantee absolute correctness, we currently release only a **portion of the dataset** to ensure quality.
+>  Note:Since our human annotations cannot guarantee absolute correctness, we currently release only a **portion of the dataset** to ensure quality.
 
 ### How to Access
 
