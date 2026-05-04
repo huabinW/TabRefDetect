@@ -33,7 +33,7 @@ We introduce **TabRefError**, a human-annotated dataset for numerical discrepanc
 | **GitHub Release** | A partial subset of the TabRefError dataset is available for download via the [GitHub Releases](https://github.com/huabinW/TabRefDetect/releases) page. |
 | **Full Dataset** | For the complete dataset, please contact the authors via email. |
 
-📧 For full dataset access, please contact the corresponding author.
+For full dataset access, please contact the corresponding author.
 
 ---
 
