@@ -1,0 +1,8 @@
+manifest.json
+inputs/
+outputs/
+*.pdf
+*.jsonl
+*.log
+__pycache__/
+*.py[cod]

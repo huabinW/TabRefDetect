@@ -1,0 +1,16 @@
+{
+  "output_root": "outputs/table_text_tree",
+  "mineru_exe": "mineru",
+  "environment": {
+    "MINERU_MODEL_SOURCE": "local"
+  },
+  "documents": [
+    {
+      "slug": "example_document",
+      "pdf_path": "inputs/example_document.pdf",
+      "pageindex_doc_name": "example_document.pdf",
+      "page_count": 12,
+      "table_parent_overrides": {}
+    }
+  ]
+}

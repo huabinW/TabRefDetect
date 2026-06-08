@@ -61,5 +61,12 @@ Training scripts and additional experiment code are available in:
 
 This directory includes open-source MLLM fine-tuning, OCR+GLM fact checking, and MLLM+SciBERT classification utilities.
 
+It also includes a data-independent
+[`MinerU + PageIndex table-text tree pipeline`](Code/MinerU_PageIndex_TableTree)
+for constructing traceable document structures and attaching MinerU table,
+text, page, bbox, and reading-order evidence. The released code contains no
+paper PDFs, OCR results, generated trees, table contents, credentials, or
+machine-specific paths.
+
 ---
 
