@@ -66,9 +66,6 @@ released module includes both:
 2. a fully local PageIndex-style structure builder based on MinerU TOC and
    heading evidence.
 
-No paper PDFs, OCR results, generated trees, table contents, credentials, or
-machine-specific paths are included in the code release.
-
 ---
 
 ##  Dataset: TabRefError
