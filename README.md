@@ -20,6 +20,57 @@ TabRefDetect is an automated framework designed to detect whether a citing paper
 
 ---
 
+##  Context-Aware Table Reference Analysis
+
+Numerical equality alone is not sufficient to determine whether a table
+reference is correct. The same value may refer to different models, datasets,
+metrics, prompts, numbers of shots, data splits, baselines, or experimental
+settings. Conversely, different values may be justified when the citing and
+cited papers report genuinely different experiments.
+
+TabRefDetect therefore includes a document-structure and evidence-construction
+pipeline based on **MinerU and PageIndex**. Its research purpose is to preserve
+the context required to distinguish justified experimental differences from
+probable table citation errors.
+
+### MinerU + PageIndex workflow
+
+- **MinerU** parses each approved PDF into page-level text blocks, table HTML,
+  captions, images, bounding boxes, footnotes, and reading-order information.
+- **PageIndex** provides the hierarchical document structure and page ranges
+  needed to locate tables within sections and subsections.
+- The structure tree is reviewed or constructed from available document
+  evidence, then combined with MinerU output to form an auditable
+  **table-text tree**.
+- Each table is attached to the best matching section while retaining its
+  canonical label, caption, page number, bbox, MinerU content index, assignment
+  reason, and nearby text.
+
+Tables are not treated as isolated artifacts. The resulting representation
+keeps the table body together with the surrounding prose that may describe its
+datasets, models, metrics, prompts, splits, baselines, and other experimental
+conditions. References and bibliography sections are retained as compact
+outline nodes by default so that analysis remains focused on table-related
+evidence.
+
+This representation supports the next stage of the research: human annotation
+and classification of whether a numerical difference is an error, a valid
+experimental variation, or a difference whose cause requires additional
+context.
+
+The reusable implementation is available in
+[`Code/MinerU_PageIndex_TableTree/`](Code/MinerU_PageIndex_TableTree). The
+released module includes both:
+
+1. merging approved PageIndex structure snapshots with local MinerU evidence;
+2. a fully local PageIndex-style structure builder based on MinerU TOC and
+   heading evidence.
+
+No paper PDFs, OCR results, generated trees, table contents, credentials, or
+machine-specific paths are included in the code release.
+
+---
+
 ##  Dataset: TabRefError
 
 We introduce **TabRefError**, a human-annotated dataset for numerical discrepancy detection in cross-document table citations. It contains numerical alignment samples across diverse table types.
@@ -53,20 +104,16 @@ If you wish to use the closed-source model reasoning strategy, please refer to t
 
 This module contains scripts and instructions for calling closed-source multimodal large language models to perform numerical discrepancy detection.
 
-### 2. Model Training and Additional Experiments
+### 2. Core Pipeline and Model Training
 
-Training scripts and additional experiment code are available in:
+The document-analysis pipeline, training scripts, and supporting experiment
+code are available in:
 
  [`Code/`](https://github.com/huabinW/TabRefDetect/tree/main/Code)
 
-This directory includes open-source MLLM fine-tuning, OCR+GLM fact checking, and MLLM+SciBERT classification utilities.
-
-It also includes a 
-[`MinerU + PageIndex table-text tree pipeline`](Code/MinerU_PageIndex_TableTree)
-for constructing traceable document structures and attaching MinerU table,
-text, page, bbox, and reading-order evidence. The released code contains no
-paper PDFs, OCR results, generated trees, table contents, credentials, or
-machine-specific paths.
+This directory includes the MinerU + PageIndex table-text tree pipeline,
+open-source MLLM fine-tuning, OCR+GLM fact checking, and MLLM+SciBERT
+classification utilities.
 
 ---
 
