@@ -24,7 +24,7 @@ TabRefDetect is an automated framework designed to detect whether a citing paper
 
 We introduce **TabRefError**, a human-annotated dataset for numerical discrepancy detection in cross-document table citations. It contains numerical alignment samples across diverse table types.
 
->  Note:Since our human annotations cannot guarantee absolute correctness, we currently release only a **portion of the dataset** to ensure quality.
+> **Note:** Since our human annotations cannot guarantee absolute correctness, we currently release only a **portion of the dataset** to ensure quality.
 
 ### How to Access
 
@@ -39,7 +39,13 @@ For full dataset access, please contact the corresponding author.
 
 ##  Getting Started
 
-### 1. API-based Inference (Closed-Source MLLM)
+Install the required Python packages:
+
+```bash
+pip install -r requirements.txt
+```
+
+### 1. API-based Inference
 
 If you wish to use the closed-source model reasoning strategy, please refer to the API client code:
 
@@ -47,13 +53,13 @@ If you wish to use the closed-source model reasoning strategy, please refer to t
 
 This module contains scripts and instructions for calling closed-source multimodal large language models to perform numerical discrepancy detection.
 
-### 2. Fine-Tuning (Open-Source MLLM)
+### 2. Model Training and Additional Experiments
 
-If you wish to fine-tune an open-source multimodal large language model using our proposed three-stage fine-tuning strategy, please refer to:
+Training scripts and additional experiment code are available in:
 
  [`Code/`](https://github.com/huabinW/TabRefDetect/tree/main/Code)
 
-This module contains the complete fine-tuning pipeline, training configurations, and evaluation scripts.
+This directory includes open-source MLLM fine-tuning, OCR+GLM fact checking, and MLLM+SciBERT classification utilities.
 
 ---
 
