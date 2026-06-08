@@ -1,0 +1,17 @@
+# API clients and OCR + GLM inference
+openai==2.30.0
+Pillow==11.3.0
+oss2==2.19.1
+
+# MLLM + SciBERT data processing and training
+numpy==2.2.6
+torch==2.10.0
+transformers==5.0.0rc0
+scikit-learn>=1.4,<2.0
+datasets==3.6.0
+peft==0.18.1
+accelerate==1.11.0
+
+# Remote serving and fine-tuning environment
+vllm==0.19.0
+ms-swift==4.1.0

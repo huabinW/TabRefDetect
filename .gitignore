@@ -1,0 +1,44 @@
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Credentials and local configuration
+.env
+.env.*
+*.pem
+*.key
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+
+# Datasets: keep only the repository placeholders
+/biaoge.json
+/TabRefError/*
+!/TabRefError/citekeypdf/
+/TabRefError/citekeypdf/*
+!/TabRefError/citekeypdf/temp
+!/TabRefError/originalkey/
+/TabRefError/originalkey/*
+!/TabRefError/originalkey/temp
+!/TabRefError/originalpdf/
+/TabRefError/originalpdf/*
+!/TabRefError/originalpdf/temp
+
+# Experiment artifacts
+outputs/
+model_outputs/
+checkpoints/
+runs/
+wandb/
+*_cache*.json
+*_batch_*.json
+ocr_glm46vflash_*_prompts.json
+ocr_glm46vflash_*_prompts.jsonl
+ocr_glm46vflash_*_model_results.json
+ocr_glm46vflash_*_model_results.jsonl

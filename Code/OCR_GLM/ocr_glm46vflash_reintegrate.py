@@ -672,14 +672,14 @@ originalkey_tab_id: {tab_id or '未知'}
 5. **OCR 归属参考**：如果 OCR 合并单元格、错位或多候选导致不确定，请结合行头、列头、多级表头和 caption 说明归属。
 
 【评分规则】
-- **Score = 1.0 (Match=True)**: 引用句中的所有关键事实均准确无误，且归属正确。
-- **0.5 <= Score < 1.0 (Match=True)**: 事实基本准确，存在非关键信息的模糊表述、轻微 OCR 噪声或四舍五入差异。
-- **Score < 0.5 (Match=False)**: 存在数值错误、模型归属错误、指标/数据集归属错误、缺少关键事实支持或捏造结论。
-- **Score = 0.0 (Match=False)**: 原文事实无法提供可核查的表格事实，或与待核查引用句无关。
-- match 必须由 score 决定：score >= 0.5 时 match=true；score < 0.5 时 match=false。
+- **Score = 1.0**: 引用句中的所有关键事实均准确无误，且归属正确。
+- **0.5 < Score < 1.0**: 事实基本准确，存在非关键信息的模糊表述、轻微 OCR 噪声或四舍五入差异。
+- **Score <= 0.5**: 存在数值错误、模型归属错误、指标/数据集归属错误、缺少关键事实支持或捏造结论。
+- **Score = 0.0**: 原文事实无法提供可核查的表格事实，或与待核查引用句无关。
+- 程序将在模型返回后根据 score > 0.5 判定 match；模型只需准确选择 score。
 
 【输出格式】
-请仅返回严格的 JSON 格式对象，不要包含 Markdown 标记。match 写 true/false，score 写 0.0~1.0 范围内的数字。
+请仅返回严格的 JSON 格式对象，不要包含 Markdown 标记。score 写 0.0~1.0 范围内的数字。
 {{
   "citekey_evidence_index": {citekey_evidence.get('index', 1)},
   "citekey_evidence_source": "{str(citekey_evidence.get('source', '')).replace('"', "'")}",
@@ -698,7 +698,6 @@ originalkey_tab_id: {tab_id or '未知'}
       }}
     ]
   }},
-  "match": true/false,
   "score": 0.0~1.0,
   "explanation": "简短说明本条 citekey evidence 与 originalkey target claims 一致或不一致的依据",
   "extraction_status": "matched / ambiguous / not_found"
@@ -739,21 +738,17 @@ def parse_model_bool(value):
     return False
 
 
-def normalize_match_score(parsed, context=""):
+def normalize_match_score(parsed, context="", match_threshold=0.5):
     if not isinstance(parsed, dict):
         return False, 0.0
-    match = parse_model_bool(parsed.get("match", False))
     raw_score = parsed.get("score", None)
     try:
         score = float(raw_score)
     except Exception:
         score = 0.0
-        logger.warning("Score missing or invalid in %s; keep model match=%s but use score=0.0 for aggregation.", context, match)
+        logger.warning("Score missing or invalid in %s; use score=0.0 for aggregation.", context)
     score = max(0.0, min(1.0, score))
-    if score < 0.5 and match:
-        logger.warning("Inconsistent model output in %s: match=true but score<0.5. Score is NOT rewritten.", context)
-    if score >= 0.5 and not match:
-        logger.warning("Inconsistent model output in %s: score>=0.5 but match=false. Score is NOT rewritten.", context)
+    match = score > match_threshold
     return match, score
 
 
@@ -868,7 +863,7 @@ def build_full_pairwise_output(row, comparisons, sample_failures, match_threshol
     sorted_comparisons = sort_comparisons_for_review(comparisons)
     best = sorted_comparisons[0] if sorted_comparisons else None
     final_score = float(best.get("score", 0.0)) if best else 0.0
-    final_match = final_score >= match_threshold
+    final_match = final_score > match_threshold
 
     output = dict(row)
     output["task"] = "pairwise_citekey_originalkey_ocr_consistency"
@@ -895,7 +890,7 @@ def build_clean_pairwise_output(row, comparisons, sample_failures, match_thresho
 
     best = clean_comparisons[0] if clean_comparisons else None
     final_score = float(best.get("score", 0.0)) if best else 0.0
-    final_match = final_score >= match_threshold
+    final_match = final_score > match_threshold
 
     return {
         "id": row.get("id"),
@@ -1087,7 +1082,11 @@ def run_existing_prompts(args):
                     )
                     context = f"{sample_id}:{evidence.get('index')}"
                     parsed = robust_json_loads(extract_json(model_result), context=context)
-                    match, score = normalize_match_score(parsed, context=context)
+                    match, score = normalize_match_score(
+                        parsed,
+                        context=context,
+                        match_threshold=args.match_threshold,
+                    )
                     comparison = {
                         "citekey_evidence": evidence,
                         "system_prompt": system_prompt,
