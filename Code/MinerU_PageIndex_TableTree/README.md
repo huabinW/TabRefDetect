@@ -1,8 +1,5 @@
 # MinerU + PageIndex Table-Text Tree
 
-This module builds auditable document and table-text trees without including
-any TabRefError dataset content.
-
 It supports two structure sources:
 
 1. Existing PageIndex/GPT-reviewed structure snapshots combined with MinerU
