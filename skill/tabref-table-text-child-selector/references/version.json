@@ -1,6 +1,6 @@
 {
   "skill": "tabref-table-text-child-selector",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "label_semantics": {
     "0": "correct/relevant",
     "1": "incorrect/irrelevant"

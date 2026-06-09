@@ -5,7 +5,7 @@ description: Select and audit the smallest body-text child blocks that describe 
 
 # TabRef Table Text Child Selector
 
-Current version: `0.2.1`.
+Current version: `0.2.2`.
 
 Find the minimal body-text spans that describe a table while preserving their complete parent paragraphs and original MinerU traceability.
 
@@ -40,13 +40,12 @@ Do not:
 Default project command:
 
 ```powershell
-python scripts/select_table_description_child_blocks.py `
-  --manifest table_tree_batch_manifest.json `
-  --annotations batch_table_text_tree\manual_table_body_text_annotations\batch_manual_table_body_text_annotations.json `
-  --candidates batch_table_text_tree\classifier_candidate_dataset\batch_table_text_classifier_candidates.json
+python skill\tabref-table-text-child-selector\scripts\select_table_description_child_blocks.py `
+  --manifest Code\MinerU_PageIndex_TableTree\manifest.json
 ```
 
-The bundled script imports project helpers. Run it with the project root on `PYTHONPATH`, or execute the project copy through `run_local_table_text_training_pipeline.py`.
+The bundled wrappers call the reusable implementation under
+`Code/MinerU_PageIndex_TableTree/`. Run them from the repository root.
 
 ## Selection Logic
 

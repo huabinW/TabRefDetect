@@ -42,6 +42,14 @@ page positions, so they must be treated as private experiment artifacts.
 | `resolve_table_captions.py` | Resolve and audit table labels/captions. |
 | `resolve_local_table_captions.py` | Run caption resolution on local table-text trees. |
 | `audit_batch_table_positions.py` | Audit table count, page, bbox, and assignment traceability. |
+| `build_local_paragraph_table_text_tree_batch.py` | Build full, untruncated MinerU OCR paragraph leaves. |
+| `materialize_manual_table_body_text_annotations.py` | Convert private parent-paragraph selections into traceable annotations. |
+| `build_table_text_classifier_candidates.py` | Build table-parent-child classification candidates. |
+| `select_table_description_child_blocks.py` | Preserve high-recall child candidates and compute transparent ranking signals. |
+| `prepare_codex_child_review_packages.py` | Package table, parent, and child evidence for Codex semantic review. |
+| `run_codex_child_semantic_review.py` | Launch one Codex precision-review task per document. |
+| `materialize_codex_child_review_results.py` | Validate and materialize final Codex labels. |
+| `run_local_table_text_training_pipeline.py` | Run the deterministic preparation stages in sequence. |
 
 ## Configuration
 
@@ -112,11 +120,59 @@ python resolve_table_captions.py
 Only upload PDFs to PageIndex or another external service when the document has
 been explicitly approved for upload.
 
+## Table-description child selection
+
+The table-description workflow separates recall and precision:
+
+1. MinerU OCR is attached as full, untruncated parent paragraphs.
+2. Private manual selections identify relevant table-parent relations.
+3. Deterministic code preserves every child under a relevant parent to maximize
+   recall. Rule scores are ranking aids, not final labels.
+4. Codex reads the table, complete parent paragraph, and exact child block to
+   assign the semantic precision label.
+5. The materializer verifies review keys, child IDs, SHA-256 hashes, labels,
+   semantic roles, and decision completeness.
+
+Label semantics are:
+
+```text
+0 = correct/relevant
+1 = incorrect/irrelevant
+```
+
+Create a private selections file from the released schema:
+
+```powershell
+Copy-Item manual_table_body_text_selections.example.json `
+  manual_table_body_text_selections.json
+```
+
+The selections file contains document-specific annotations and is excluded from
+version control. Run the deterministic stages with:
+
+```powershell
+python run_local_table_text_training_pipeline.py `
+  --manifest manifest.json `
+  --selections manual_table_body_text_selections.json `
+  --allow-draft
+```
+
+Then perform and validate the Codex precision stage:
+
+```powershell
+python run_codex_child_semantic_review.py --manifest manifest.json
+python materialize_codex_child_review_results.py --manifest manifest.json
+```
+
+The corresponding Codex Skills are published under the repository-level
+[`skill/`](../../skill/) directory.
+
 ## Output policy
 
 The module `.gitignore` excludes:
 
 - local manifests;
+- private manual parent-paragraph selections;
 - input PDFs;
 - MinerU outputs;
 - generated document trees;

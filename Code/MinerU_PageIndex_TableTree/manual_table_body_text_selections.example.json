@@ -1,0 +1,23 @@
+{
+  "annotation_version": "1.0",
+  "selection_method": "manual_original_paper_review",
+  "unit": "table_parent_paragraph_relation",
+  "documents": [
+    {
+      "slug": "example_document",
+      "tables": [
+        {
+          "table_label": "Table 1",
+          "evidence": [
+            {
+              "anchor_raw_content_index": 42,
+              "evidence_type": "direct_reference",
+              "relevance": "describes_table",
+              "rationale": "The paragraph explicitly introduces the table."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -64,7 +64,29 @@ released module includes both:
 
 1. merging approved PageIndex structure snapshots with local MinerU evidence;
 2. a fully local PageIndex-style structure builder based on MinerU TOC and
-   heading evidence.
+   heading evidence;
+3. full OCR paragraph-tree construction and auditable table-parent-child
+   candidate generation;
+4. a two-stage table-description selector in which deterministic code
+   maximizes recall and Codex performs semantic precision review.
+
+The second-stage selector keeps the complete parent paragraph together with
+each candidate child block. It uses `0 = correct/relevant` and
+`1 = incorrect/irrelevant`. Codex decisions remain provisional silver labels
+until they are compared with human annotations.
+
+Reusable Codex workflows are released in [`skill/`](skill/):
+
+- [`tabref-table-tree-audit`](skill/tabref-table-tree-audit) audits table
+  counts, positions, traceability, and section assignments.
+- [`tabref-table-caption-resolver`](skill/tabref-table-caption-resolver)
+  recovers and audits canonical table labels and captions.
+- [`tabref-table-text-child-selector`](skill/tabref-table-text-child-selector)
+  manages high-recall child generation and Codex semantic precision review.
+
+The repository contains reusable code and empty/example schemas only. PDFs,
+MinerU OCR outputs, generated trees, review packages, model decisions, and
+paper-specific annotations are not included.
 
 ---
 
@@ -111,6 +133,13 @@ code are available in:
 This directory includes the MinerU + PageIndex table-text tree pipeline,
 open-source MLLM fine-tuning, OCR+GLM fact checking, and MLLM+SciBERT
 classification utilities.
+
+### 3. Codex Skills
+
+The reusable Codex Skills for table-tree auditing, caption resolution, and
+table-description child selection are available in:
+
+[`skill/`](https://github.com/huabinW/TabRefDetect/tree/main/skill)
 
 ---
 
