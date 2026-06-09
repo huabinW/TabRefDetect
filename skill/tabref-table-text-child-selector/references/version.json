@@ -1,0 +1,9 @@
+{
+  "skill": "tabref-table-text-child-selector",
+  "version": "0.2.1",
+  "label_semantics": {
+    "0": "correct/relevant",
+    "1": "incorrect/irrelevant"
+  },
+  "child_label_status": "code stage preserves recall; Codex stage supplies provisional semantic precision labels until compared with user gold"
+}

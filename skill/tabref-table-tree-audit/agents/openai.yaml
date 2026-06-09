@@ -1,0 +1,4 @@
+interface:
+  display_name: "TabRef Table Tree Audit"
+  short_description: "Audit TabRef table-text tree results."
+  default_prompt: "Audit table-text tree construction results for count, position, section assignment, and traceability."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "TabRef Caption Resolver"
+  short_description: "Resolve table labels and captions from MinerU."
+  default_prompt: "Resolve whether each table correctly corresponds to its table title and numbered references."
