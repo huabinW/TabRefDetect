@@ -25,23 +25,15 @@ TabRefDetect is an automated framework designed to detect whether a citing paper
 
 ```mermaid
 flowchart LR
-    A[Scientific PDFs] --> B[MinerU OCR evidence]
-    B --> C[PageIndex-style document structure]
-    C --> D[Auditable table-text tree]
-    D --> E[High-recall parent and child candidates]
-    E --> F{Review gate}
-    F -->|Codex CLI| G[Semantic precision review]
-    F -->|Existing or manual| H[Validated decisions]
-    G --> I[Materialized table-context evidence]
-    H --> I
-    I --> J[Human child-level feedback]
-    J --> K[Candidate-policy learning]
-    K --> L[Pending Skill proposal]
-    L --> M[Human approval gate]
-    I --> N[Future local classifier or reranker]
+    A["Scientific PDFs"] --> B["Document Evidence<br/>MinerU OCR + PageIndex-style structure"]
+    B --> C["Table-Text Tree<br/>caption, body, page, bbox, section"]
+    C --> D["Context Agent<br/>high-recall candidates + review routing"]
+    D --> E["Semantic Review<br/>Codex now, local model later"]
+    E --> F["Auditable Evidence<br/>parent paragraph + child span + labels"]
+    F --> G["Human Feedback<br/>policy learning + Skill proposal approval"]
 ```
 
-## Resume-Friendly Metrics
+## Key Engineering Facts
 
 - Built a **14-node LangGraph workflow agent** for auditable scientific
   table-context identification.

@@ -32,33 +32,34 @@ table + caption + OCR paragraph tree
 
 ```mermaid
 flowchart TD
-    A[Workspace validation] --> B[Build MinerU paragraph evidence trees]
-    B --> C[Audit table and text traceability]
-    C --> D[Materialize human parent annotations]
-    D --> E[Generate high-recall parent-child candidates]
-    E --> F[Prepare table-parent-child review packages]
-    F --> G{Review gate}
+    subgraph A["Deterministic Evidence Pipeline"]
+        A1["Validate workspace"] --> A2["Build paragraph evidence trees"]
+        A2 --> A3["Audit table/text traceability"]
+        A3 --> A4["Generate high-recall candidates"]
+        A4 --> A5["Prepare review packages"]
+    end
 
-    G -->|prepare| H[Stop after review packages]
-    G -->|existing| I[Reuse existing decisions]
-    G -->|manual| J[LangGraph interrupt for human completion]
-    G -->|codex| K[Send one Codex review task per paper]
+    subgraph B["Semantic Review Routing"]
+        B1{"Review mode"}
+        B1 -->|prepare| B2["Stop with packages"]
+        B1 -->|existing/manual| B3["Validate decisions"]
+        B1 -->|codex| B4["Parallel paper review<br/>LangGraph Send"]
+        B4 --> B3
+    end
 
-    K --> L[Aggregate paper-level decisions]
-    I --> M[Strict materialization validator]
-    J --> M
-    L --> M
-    M --> N[Final table-context evidence]
+    subgraph C["Learning and Governance"]
+        C1["Materialized table-context evidence"] --> C2{"Learning mode"}
+        C2 -->|off| C3["Finalize run"]
+        C2 -->|analyze| C4["Optimize candidate policy"]
+        C2 -->|propose| C4
+        C4 --> C5["Memory + reflection"]
+        C5 --> C6["Pending Skill proposal"]
+        C6 --> C7["Human approval gate"]
+    end
 
-    N --> O{Learning mode}
-    O -->|off| P[Finalize run summary]
-    O -->|analyze| Q[Optimize candidate policy from human gold]
-    O -->|propose| Q
-    Q --> R[Background reflection and memory]
-    R -->|analyze| P
-    R -->|propose| S[Stage pending Skill proposal]
-    S --> T[Human approval command]
-    T --> P
+    A5 --> B1
+    B2 --> C1
+    B3 --> C1
 ```
 
 ## Why This Agent Is Interesting
@@ -154,7 +155,7 @@ explicit approval gate.
 - **Model-replaceable design**: Codex review can later be replaced by a local
   classifier or reranker that emits the same decision schema.
 
-## Resume-Friendly Metrics
+## Key Engineering Facts
 
 | Dimension | Summary |
 |---|---|
