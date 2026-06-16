@@ -21,18 +21,6 @@ TabRefDetect is an automated framework designed to detect whether a citing paper
   child spans, hashes, page metadata, and labels for downstream classifier
   training.
 
-## Architecture Overview
-
-```mermaid
-flowchart LR
-    A["Scientific PDFs"] --> B["Document Evidence<br/>MinerU OCR + PageIndex-style structure"]
-    B --> C["Table-Text Tree<br/>caption, body, page, bbox, section"]
-    C --> D["Context Agent<br/>high-recall candidates + review routing"]
-    D --> E["Semantic Review<br/>Codex now, local model later"]
-    E --> F["Auditable Evidence<br/>parent paragraph + child span + labels"]
-    F --> G["Human Feedback<br/>policy learning + Skill proposal approval"]
-```
-
 ## Key Engineering Facts
 
 - Built a **14-node LangGraph workflow agent** for auditable scientific

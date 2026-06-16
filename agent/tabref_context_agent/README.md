@@ -28,40 +28,6 @@ table + caption + OCR paragraph tree
   -> human feedback and controlled self-learning
 ```
 
-## Architecture Diagram
-
-```mermaid
-flowchart TD
-    subgraph A["Deterministic Evidence Pipeline"]
-        A1["Validate workspace"] --> A2["Build paragraph evidence trees"]
-        A2 --> A3["Audit table/text traceability"]
-        A3 --> A4["Generate high-recall candidates"]
-        A4 --> A5["Prepare review packages"]
-    end
-
-    subgraph B["Semantic Review Routing"]
-        B1{"Review mode"}
-        B1 -->|prepare| B2["Stop with packages"]
-        B1 -->|existing/manual| B3["Validate decisions"]
-        B1 -->|codex| B4["Parallel paper review<br/>LangGraph Send"]
-        B4 --> B3
-    end
-
-    subgraph C["Learning and Governance"]
-        C1["Materialized table-context evidence"] --> C2{"Learning mode"}
-        C2 -->|off| C3["Finalize run"]
-        C2 -->|analyze| C4["Optimize candidate policy"]
-        C2 -->|propose| C4
-        C4 --> C5["Memory + reflection"]
-        C5 --> C6["Pending Skill proposal"]
-        C6 --> C7["Human approval gate"]
-    end
-
-    A5 --> B1
-    B2 --> C1
-    B3 --> C1
-```
-
 ## Why This Agent Is Interesting
 
 This is not a demo chatbot. It is a workflow agent designed around research
