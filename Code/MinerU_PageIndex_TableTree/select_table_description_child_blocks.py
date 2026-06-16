@@ -56,6 +56,24 @@ EVIDENCE_FAMILIES = {
     "method": METHOD_RE,
 }
 
+DEFAULT_POLICY = {
+    "schema_version": "1.0",
+    "policy_version": "candidate-policy-1.0.0",
+    "source": "built_in_high_recall_default",
+    "weights": {
+        "exact_table_reference": 100.0,
+        "table_text_overlap_per_token": 5.0,
+        "table_text_overlap_cap": 30.0,
+        "annotation_rationale_overlap_per_token": 5.0,
+        "annotation_rationale_overlap_cap": 25.0,
+        "evidence_family_match": 25.0,
+        "condition_match": 15.0,
+        "result_match": 15.0,
+    },
+    "review_threshold": 0.0,
+    "force_review_signals": ["exact_table_reference"],
+}
+
 
 def evidence_family(evidence_type):
     lowered = evidence_type.lower()
@@ -83,7 +101,45 @@ def annotation_index(annotations):
     return result
 
 
-def child_signals(table, child_text, evidence):
+def load_policy(path):
+    if path and path.exists():
+        policy = load_json(path)
+        if "weights" not in policy or "review_threshold" not in policy:
+            raise ValueError(f"Invalid candidate policy: {path}")
+        return policy
+    return copy.deepcopy(DEFAULT_POLICY)
+
+
+def score_signals(signals, policy):
+    weights = policy["weights"]
+    score = weights["exact_table_reference"] if signals["exact_table_reference"] else 0
+    score += min(
+        weights["table_text_overlap_cap"],
+        len(signals["table_text_overlap"])
+        * weights["table_text_overlap_per_token"],
+    )
+    score += min(
+        weights["annotation_rationale_overlap_cap"],
+        len(signals["annotation_rationale_overlap"])
+        * weights["annotation_rationale_overlap_per_token"],
+    )
+    score += weights["evidence_family_match"] if signals["evidence_family_match"] else 0
+    score += weights["condition_match"] if signals["condition_match"] else 0
+    score += (
+        weights["result_match"]
+        if signals["result_match"] and signals["evidence_family"] == "result"
+        else 0
+    )
+    return round(float(score), 6)
+
+
+def send_to_semantic_review(signals, policy):
+    if any(signals.get(name) for name in policy.get("force_review_signals", [])):
+        return True
+    return signals["score"] >= float(policy["review_threshold"])
+
+
+def child_signals(table, child_text, evidence, policy):
     exact_reference = bool(table_reference_pattern(table["canonical_label"]).search(child_text))
     table_tokens = lexical_tokens(
         " ".join(
@@ -105,16 +161,7 @@ def child_signals(table, child_text, evidence):
     family_match = bool(EVIDENCE_FAMILIES[family].search(child_text))
     condition_match = bool(CONDITION_RE.search(child_text))
     result_match = bool(RESULT_RE.search(child_text))
-    score = 0
-    score += 100 if exact_reference else 0
-    score += min(30, len(table_overlap) * 5)
-    score += min(25, len(rationale_overlap) * 5)
-    score += 25 if family_match else 0
-    score += 15 if condition_match else 0
-    score += 15 if result_match and family == "result" else 0
-
-    return {
-        "score": score,
+    signals = {
         "exact_table_reference": exact_reference,
         "table_text_overlap": table_overlap,
         "annotation_rationale_overlap": rationale_overlap,
@@ -123,12 +170,15 @@ def child_signals(table, child_text, evidence):
         "condition_match": condition_match,
         "result_match": result_match,
     }
+    signals["score"] = score_signals(signals, policy)
+    return signals
 
 
-def select_children(children, table, evidence):
+def select_children(children, table, evidence, policy):
     output = []
     for child in children:
-        signals = child_signals(table, child["child_text"], evidence)
+        signals = child_signals(table, child["child_text"], evidence, policy)
+        review_candidate = send_to_semantic_review(signals, policy)
         enriched = dict(child)
         enriched.update(
             {
@@ -137,14 +187,30 @@ def select_children(children, table, evidence):
                 "child_label_source": "code_high_recall_v1",
                 "child_review_status": "awaiting_codex_semantic_review",
                 "child_selection_signals": signals,
-                "child_selection_reason": "all_children_preserved_from_relevant_parent_for_recall",
+                "send_to_semantic_review": review_candidate,
+                "candidate_policy_version": policy["policy_version"],
+                "child_selection_reason": (
+                    "selected_by_active_candidate_policy"
+                    if review_candidate
+                    else "preserved_as_evidence_but_below_review_threshold"
+                ),
             }
         )
         output.append(enriched)
+    if output and not any(child["send_to_semantic_review"] for child in output):
+        fallback = max(
+            output,
+            key=lambda child: child["child_selection_signals"]["score"],
+        )
+        fallback["send_to_semantic_review"] = True
+        fallback["child_selection_reason"] = (
+            "parent_coverage_fallback_highest_scoring_child"
+        )
     return output
 
 
-def label_dataset(dataset, annotations):
+def label_dataset(dataset, annotations, policy=None):
+    policy = policy or copy.deepcopy(DEFAULT_POLICY)
     evidence_by_key = annotation_index(annotations)
     labeled = copy.deepcopy(dataset)
     selected_rows = []
@@ -165,6 +231,8 @@ def label_dataset(dataset, annotations):
                             "child_label_source": "inherited_from_incorrect_parent",
                             "child_review_status": "deterministic",
                             "child_selection_signals": {},
+                            "send_to_semantic_review": False,
+                            "candidate_policy_version": policy["policy_version"],
                             "child_selection_reason": "parent_relation_is_incorrect",
                         }
                         for child in candidate["children"]
@@ -176,7 +244,9 @@ def label_dataset(dataset, annotations):
                     raise ValueError(f"Missing manual parent evidence for {key}")
                 candidate["parent_evidence_type"] = evidence["evidence_type"]
                 candidate["parent_manual_rationale"] = evidence["manual_rationale"]
-                candidate["children"] = select_children(candidate["children"], table, evidence)
+                candidate["children"] = select_children(
+                    candidate["children"], table, evidence, policy
+                )
                 for child in candidate["children"]:
                     row = {
                         "slug": slug,
@@ -192,7 +262,7 @@ def label_dataset(dataset, annotations):
                         "parent_manual_rationale": evidence["manual_rationale"],
                         "child": child,
                     }
-                    if child["child_label"] == 0:
+                    if child["send_to_semantic_review"]:
                         selected_rows.append(row)
     labeled["dataset_version"] = "1.2"
     labeled["label_semantics"]["child_label"] = {
@@ -200,9 +270,10 @@ def label_dataset(dataset, annotations):
         "1": "incorrect/irrelevant child block",
     }
     labeled["child_label_policy"] = {
-        "version": "code_high_recall_v1",
+        "version": "code_high_recall_v2",
         "incorrect_parent": "All children inherit label 1.",
-        "correct_parent": "Preserve every child from each correct/relevant parent paragraph. Signals and scores only rank candidates; they never remove a child. Final precision is decided by Codex.",
+        "correct_parent": "Preserve every child from each correct/relevant parent paragraph. The active policy only controls which preserved children enter semantic review.",
+        "active_candidate_policy": policy,
         "gold_status": "High-recall candidates only; not final labels or human gold.",
     }
     return labeled, selected_rows
@@ -234,12 +305,23 @@ def audit(labeled, selected_rows):
                         candidate["candidate_id"],
                         child["child_id"],
                     )
-                    if (label == 0) != (key in selected_ids):
+                    if bool(child.get("send_to_semantic_review")) != (key in selected_ids):
                         failures.append(f"{candidate['candidate_id']} selected output mismatch")
                 if candidate["manual_parent_label"] == 1 and correct_children:
                     failures.append(f"{candidate['candidate_id']} has correct child under incorrect parent")
                 if candidate["manual_parent_label"] == 0 and not correct_children:
                     failures.append(f"{candidate['candidate_id']} correct parent has no selected child")
+                if (
+                    candidate["manual_parent_label"] == 0
+                    and candidate["children"]
+                    and not any(
+                        child.get("send_to_semantic_review")
+                        for child in candidate["children"]
+                    )
+                ):
+                    failures.append(
+                        f"{candidate['candidate_id']} correct parent has no review candidate"
+                    )
     return failures, label_counts
 
 
@@ -277,19 +359,23 @@ def main():
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--annotations", type=Path, default=DEFAULT_ANNOTATIONS)
     parser.add_argument("--candidates", type=Path)
+    parser.add_argument(
+        "--policy",
+        type=Path,
+        help="Optional active candidate-policy JSON. Missing policy preserves all children.",
+    )
     args = parser.parse_args()
 
     manifest = load_json(args.manifest)
     output_dir = Path(manifest["output_root"]) / "classifier_candidate_dataset"
-    candidates_path = args.candidates or output_dir / "batch_table_text_classifier_candidates.json"
-    annotations_path = args.annotations or (
-        Path(manifest["output_root"])
-        / "manual_table_body_text_annotations"
-        / "batch_manual_table_body_text_annotations.json"
+    policy_path = args.policy or (
+        Path(manifest["output_root"]) / "learning/candidate_policy/active.json"
     )
+    policy = load_policy(policy_path)
+    candidates_path = args.candidates or output_dir / "batch_table_text_classifier_candidates.json"
     dataset = load_json(candidates_path)
-    annotations = load_json(annotations_path)
-    labeled, selected_rows = label_dataset(dataset, annotations)
+    annotations = load_json(args.annotations)
+    labeled, selected_rows = label_dataset(dataset, annotations, policy)
     failures, label_counts = audit(labeled, selected_rows)
     if failures:
         raise ValueError("\n".join(failures))
@@ -340,6 +426,9 @@ def main():
         "jsonl": str(jsonl_path),
         "child_label_0_correct": label_counts[0],
         "child_label_1_incorrect": label_counts[1],
+        "semantic_review_candidates": len(selected_rows),
+        "candidate_policy_version": policy["policy_version"],
+        "candidate_policy_path": str(policy_path) if policy_path.exists() else None,
         "selected_parent_relations": len(
             {
                 (row["slug"], row["table_anchor"]["canonical_label"], row["candidate_id"])

@@ -14,3 +14,17 @@ def test_absolute_path_is_preserved(tmp_path: Path):
     config = AgentConfig(workspace_root=tmp_path, manifest_path=absolute)
     assert config.resolved_manifest_path == absolute
 
+
+def test_json_workspace_root_is_relative_to_config_file(tmp_path: Path):
+    config_dir = tmp_path / "agent"
+    workspace = tmp_path / "Code" / "MinerU_PageIndex_TableTree"
+    config_dir.mkdir()
+    workspace.mkdir(parents=True)
+    config_path = config_dir / "config.example.json"
+    config_path.write_text(
+        '{"workspace_root": "../Code/MinerU_PageIndex_TableTree"}',
+        encoding="utf-8",
+    )
+
+    config = AgentConfig.from_json(config_path)
+    assert config.workspace_root == workspace.resolve()

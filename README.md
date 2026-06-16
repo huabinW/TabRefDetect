@@ -149,10 +149,12 @@ available in:
 [`agent/tabref_context_agent/`](https://github.com/huabinW/TabRefDetect/tree/main/agent/tabref_context_agent)
 
 This agent orchestrates deterministic table-context preprocessing, review
-package preparation, Codex or existing-decision routing, and a controlled
-human-feedback learning loop. It releases reusable code and sanitized
-configuration templates only; local runtime outputs and annotations are not
-included.
+package preparation, Codex or existing-decision routing, paper-level parallel
+review, and a controlled human-feedback learning loop. It demonstrates a
+research-grade agent workflow with checkpoints, auditable evidence, Skill
+proposal approval, and a path toward replacing Codex review with a local
+classifier. It releases reusable code and sanitized configuration templates
+only; local runtime outputs and annotations are not included.
 
 ---
 

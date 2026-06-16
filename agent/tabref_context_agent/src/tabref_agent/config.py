@@ -83,4 +83,7 @@ class AgentConfig(BaseModel):
     def from_json(cls, path: str | Path) -> "AgentConfig":
         config_path = Path(path).expanduser().resolve()
         payload = json.loads(config_path.read_text(encoding="utf-8"))
+        workspace = Path(payload["workspace_root"]).expanduser()
+        if not workspace.is_absolute():
+            payload["workspace_root"] = str((config_path.parent / workspace).resolve())
         return cls.model_validate(payload)

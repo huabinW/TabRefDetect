@@ -5,7 +5,7 @@ description: Select and audit the smallest body-text child blocks that describe 
 
 # TabRef Table Text Child Selector
 
-Current version: `0.2.2`.
+Current version: `0.3.0`.
 
 Find the minimal body-text spans that describe a table while preserving their complete parent paragraphs and original MinerU traceability.
 
@@ -17,6 +17,7 @@ Find the minimal body-text spans that describe a table while preserving their co
 - Separate deterministic high-recall candidate generation from Codex semantic precision review.
 - Treat code-stage child labels as candidates, not final semantic labels.
 - Compare later user annotations against current predictions and update this same Skill.
+- Support a controlled self-learning loop where candidate thresholds and rule weights can be optimized from human gold, while Skill text changes are staged for human approval.
 
 Do not:
 
@@ -24,6 +25,8 @@ Do not:
 - Infer citation errors between citing and cited papers.
 - Compare table values across papers.
 - Replace manual gold annotations with heuristic predictions.
+- Treat Codex decisions as training gold.
+- Apply a self-generated Skill patch without explicit human approval and a preserved history snapshot.
 - Create another child-selector Skill when refining this workflow.
 
 ## Workflow
@@ -32,20 +35,22 @@ Do not:
 2. Confirm parent labels use `0 = correct/relevant`, `1 = incorrect/irrelevant`.
 3. Run `scripts/select_table_description_child_blocks.py`.
 4. Preserve every child under a correct parent so the code stage maximizes recall.
+5. Use `send_to_semantic_review` to decide which preserved children enter the second-stage semantic review queue.
 5. Run `scripts/prepare_codex_child_review_packages.py`.
 6. Run `scripts/run_codex_child_semantic_review.py`, or read each package in the current Codex session and write its decisions.
 7. Run `scripts/materialize_codex_child_review_results.py` to validate completeness and produce final outputs.
-8. Report code-stage candidate counts separately from Codex final labels and human gold.
+8. Report preserved code-stage candidates, semantic-review candidates, Codex final labels, and human gold separately.
 
 Default project command:
 
 ```powershell
-python skill\tabref-table-text-child-selector\scripts\select_table_description_child_blocks.py `
-  --manifest Code\MinerU_PageIndex_TableTree\manifest.json
+python scripts/select_table_description_child_blocks.py `
+  --manifest manifest.json `
+  --annotations outputs/manual_table_body_text_annotations/batch_manual_table_body_text_annotations.json `
+  --candidates outputs/classifier_candidate_dataset/batch_table_text_classifier_candidates.json
 ```
 
-The bundled wrappers call the reusable implementation under
-`Code/MinerU_PageIndex_TableTree/`. Run them from the repository root.
+The bundled script imports project helpers. Run it with the project root on `PYTHONPATH`, or execute the project copy through `run_local_table_text_training_pipeline.py`.
 
 ## Selection Logic
 
@@ -59,7 +64,18 @@ For a parent labeled `0`, preserve every child and score it using:
 - Evidence-family match: dataset, model, metric, training, method, or result.
 - Experimental-condition and result-description cues.
 
-The score only orders review work. It must not remove children or become the final label.
+The score only orders review work and controls `send_to_semantic_review`.
+It must not remove children from the preserved candidate dataset or become the final label.
+
+An active candidate policy may update:
+
+- Signal weights.
+- The review threshold.
+- Force-review signals, such as explicit table references.
+
+Policy learning must use human child-level feedback only. It may reduce the
+review queue after meeting recall and per-table coverage guardrails, but it
+must keep all original child evidence in the full dataset.
 
 ## Codex Precision Review
 
@@ -99,8 +115,10 @@ Treat the score as an interpretable ranking aid, not a calibrated probability.
 Mark code-stage candidates:
 
 ```text
-child_label_source = code_high_recall_v1
+child_label_source = code_high_recall_v2
 child_review_status = awaiting_codex_semantic_review
+send_to_semantic_review = true|false
+candidate_policy_version = candidate-policy-...
 ```
 
 Mark final model decisions:
@@ -114,6 +132,43 @@ Never present code candidates or Codex decisions as human gold labels.
 The automated launcher starts one Codex CLI review per paper and materializes
 results only after every expected decision file exists and passes validation.
 
+## Controlled Self-Learning
+
+The agent may maintain local memory artifacts:
+
+- `learning/human_child_feedback.jsonl`: immutable human child-level labels.
+- `learning/memory/events.jsonl`: human correction events and signal snapshots.
+- `learning/memory/lessons.json`: short lessons derived from human feedback.
+- `learning/reflections/*.json`: background review summaries.
+- `learning/candidate_policy/active.json`: active rule weights and threshold.
+- `learning/candidate_policy/history/*.json`: previous policy snapshots.
+- `learning/skill_proposals/pending/*`: proposed Skill edits awaiting approval.
+- `learning/skill_history/tabref-table-text-child-selector/*`: historical live Skill snapshots.
+
+Allowed automatic behavior:
+
+1. Read human feedback.
+2. Evaluate the current candidate policy.
+3. Search conservative rule-weight and threshold updates.
+4. Activate a candidate policy only when the configured minimum recall and per-table coverage guardrails pass.
+5. Write a reflection and, in propose mode, stage a Skill update proposal.
+
+Forbidden automatic behavior:
+
+1. Use Codex labels as human gold.
+2. Delete preserved candidate evidence.
+3. Change label semantics.
+4. Modify live Skill files directly from a learning run.
+5. Approve a pending Skill proposal without a human command.
+
+Skill proposal approval must:
+
+1. Show or inspect the pending proposal first.
+2. Verify the live Skill version still matches the proposal base version.
+3. Save a complete live Skill snapshot to history.
+4. Copy only allowlisted files from the pending proposal.
+5. Increment the version in both this file and `references/version.json`.
+
 ## Updating With User Gold
 
 When the user supplies child-level annotations:
@@ -121,9 +176,11 @@ When the user supplies child-level annotations:
 1. Preserve the supplied annotation unchanged as a gold artifact.
 2. Match records using document slug, canonical table label, parent raw indices, and child offsets/text.
 3. Produce false-positive and false-negative audits by evidence family and selection signal.
-4. Modify the bundled selector and this workflow in place.
-5. Re-run the existing five-paper regression set.
-6. Increment the version in both this file and `references/version.json`.
+4. Optimize candidate-policy weights and thresholds only if guardrails pass.
+5. Stage any Skill wording change in `learning/skill_proposals/pending`.
+6. Modify the live Skill only after explicit approval.
+7. Re-run the existing five-paper regression set.
+8. Increment the version in both this file and `references/version.json`.
 
 Use semantic versioning:
 

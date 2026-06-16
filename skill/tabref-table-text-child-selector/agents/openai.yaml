@@ -1,4 +1,4 @@
 interface:
   display_name: "TabRef Table Text Child Selector"
-  short_description: "Find table-related body-text child blocks"
-  default_prompt: "Use $tabref-table-text-child-selector to select the body-text child blocks that describe each table."
+  short_description: "Find and refine table-related body-text child blocks"
+  default_prompt: "Use $tabref-table-text-child-selector to select table-related body-text child blocks, preserving recall and separating code candidates, Codex review, and human gold."

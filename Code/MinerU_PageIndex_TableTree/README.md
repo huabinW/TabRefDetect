@@ -128,9 +128,11 @@ The table-description workflow separates recall and precision:
 2. Private manual selections identify relevant table-parent relations.
 3. Deterministic code preserves every child under a relevant parent to maximize
    recall. Rule scores are ranking aids, not final labels.
-4. Codex reads the table, complete parent paragraph, and exact child block to
+4. The active candidate policy marks `send_to_semantic_review`, which controls
+   the semantic-review queue without deleting preserved child evidence.
+5. Codex reads the table, complete parent paragraph, and exact child block to
    assign the semantic precision label.
-5. The materializer verifies review keys, child IDs, SHA-256 hashes, labels,
+6. The materializer verifies review keys, child IDs, SHA-256 hashes, labels,
    semantic roles, and decision completeness.
 
 Label semantics are:
