@@ -1,0 +1,18 @@
+{
+  "workspace_root": ".",
+  "manifest_path": "table_tree_batch_manifest.json",
+  "output_dir": "outputs/agent_v1",
+  "checkpoint_db": "outputs/agent_v1/checkpoints.sqlite",
+  "review_mode": "prepare",
+  "codex_command": "codex",
+  "max_parallel_reviews": 2,
+  "force_codex_review": false,
+  "learning_mode": "off",
+  "learning_feedback_path": "outputs/learning/human_child_feedback.jsonl",
+  "candidate_policy_path": "outputs/learning/candidate_policy/active.json",
+  "learning_output_dir": "outputs/learning",
+  "selector_skill_dir": "~/.codex/skills/tabref-table-text-child-selector",
+  "learning_min_examples": 30,
+  "learning_min_recall": 0.98,
+  "learning_min_table_coverage": 1.0
+}

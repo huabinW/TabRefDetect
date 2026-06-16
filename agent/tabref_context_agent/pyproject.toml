@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tabref-context-agent"
+version = "0.3.0"
+description = "A LangGraph workflow agent for auditable table-context identification."
+requires-python = ">=3.10"
+dependencies = [
+  "langgraph>=1.0,<2",
+  "langgraph-checkpoint-sqlite>=3,<4",
+  "pydantic>=2.7,<3",
+]
+
+[project.scripts]
+tabref-agent = "tabref_agent.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

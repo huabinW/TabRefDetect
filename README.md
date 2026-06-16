@@ -141,5 +141,18 @@ table-description child selection are available in:
 
 [`skill/`](https://github.com/huabinW/TabRefDetect/tree/main/skill)
 
+### 4. Workflow Agent
+
+The LangGraph workflow agent for auditable table-context identification is
+available in:
+
+[`agent/tabref_context_agent/`](https://github.com/huabinW/TabRefDetect/tree/main/agent/tabref_context_agent)
+
+This agent orchestrates deterministic table-context preprocessing, review
+package preparation, Codex or existing-decision routing, and a controlled
+human-feedback learning loop. It releases reusable code and sanitized
+configuration templates only; local runtime outputs and annotations are not
+included.
+
 ---
 
