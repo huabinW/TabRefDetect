@@ -28,6 +28,39 @@ table + caption + OCR paragraph tree
   -> human feedback and controlled self-learning
 ```
 
+## Architecture Diagram
+
+```mermaid
+flowchart TD
+    A[Workspace validation] --> B[Build MinerU paragraph evidence trees]
+    B --> C[Audit table and text traceability]
+    C --> D[Materialize human parent annotations]
+    D --> E[Generate high-recall parent-child candidates]
+    E --> F[Prepare table-parent-child review packages]
+    F --> G{Review gate}
+
+    G -->|prepare| H[Stop after review packages]
+    G -->|existing| I[Reuse existing decisions]
+    G -->|manual| J[LangGraph interrupt for human completion]
+    G -->|codex| K[Send one Codex review task per paper]
+
+    K --> L[Aggregate paper-level decisions]
+    I --> M[Strict materialization validator]
+    J --> M
+    L --> M
+    M --> N[Final table-context evidence]
+
+    N --> O{Learning mode}
+    O -->|off| P[Finalize run summary]
+    O -->|analyze| Q[Optimize candidate policy from human gold]
+    O -->|propose| Q
+    Q --> R[Background reflection and memory]
+    R -->|analyze| P
+    R -->|propose| S[Stage pending Skill proposal]
+    S --> T[Human approval command]
+    T --> P
+```
+
 ## Why This Agent Is Interesting
 
 This is not a demo chatbot. It is a workflow agent designed around research
@@ -120,6 +153,18 @@ explicit approval gate.
   snapshots before approval.
 - **Model-replaceable design**: Codex review can later be replaced by a local
   classifier or reranker that emits the same decision schema.
+
+## Resume-Friendly Metrics
+
+| Dimension | Summary |
+|---|---|
+| Workflow graph | 14 LangGraph nodes with explicit routing and finalization |
+| Review modes | `prepare`, `codex`, `existing`, `manual` |
+| Learning modes | `off`, `analyze`, `propose` |
+| Parallelism | Paper-level fan-out/fan-in with LangGraph `Send` |
+| Governance | Skill proposals require human approval and history snapshots |
+| Tests | 18 unit tests for config, routing, graph behavior, learning, and approval |
+| Extensibility | Codex semantic review can be replaced by a local classifier or reranker |
 
 ## Repository Layout
 

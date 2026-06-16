@@ -6,6 +6,57 @@ TabRefDetect is an automated framework designed to detect whether a citing paper
 
 ---
 
+## Project Highlights
+
+- **Research problem**: detects numerical and contextual inconsistencies in
+  cross-document scientific table citations.
+- **Document intelligence pipeline**: combines MinerU OCR, PageIndex-style
+  document structure, table-text trees, and auditable evidence preservation.
+- **Agent engineering**: includes a LangGraph workflow agent for table-context
+  identification with checkpointing, parallel review, human feedback, and
+  Skill approval gates.
+- **Hybrid review design**: separates deterministic high-recall candidate
+  generation from Codex or future local-model semantic precision review.
+- **Model-ready outputs**: preserves table anchors, full parent paragraphs,
+  child spans, hashes, page metadata, and labels for downstream classifier
+  training.
+
+## Architecture Overview
+
+```mermaid
+flowchart LR
+    A[Scientific PDFs] --> B[MinerU OCR evidence]
+    B --> C[PageIndex-style document structure]
+    C --> D[Auditable table-text tree]
+    D --> E[High-recall parent and child candidates]
+    E --> F{Review gate}
+    F -->|Codex CLI| G[Semantic precision review]
+    F -->|Existing or manual| H[Validated decisions]
+    G --> I[Materialized table-context evidence]
+    H --> I
+    I --> J[Human child-level feedback]
+    J --> K[Candidate-policy learning]
+    K --> L[Pending Skill proposal]
+    L --> M[Human approval gate]
+    I --> N[Future local classifier or reranker]
+```
+
+## Resume-Friendly Metrics
+
+- Built a **14-node LangGraph workflow agent** for auditable scientific
+  table-context identification.
+- Supports **4 review modes**: `prepare`, `codex`, `existing`, and `manual`.
+- Supports **3 learning modes**: `off`, `analyze`, and `propose`.
+- Implements **paper-level parallel review** using LangGraph `Send`.
+- Includes **controlled self-learning** from human annotations with recall and
+  table-coverage guardrails.
+- Maintains **Skill version governance**: pending proposals, explicit human
+  approval, and history snapshots.
+- Ships with **18 unit tests** covering routing, graph compilation, parallel
+  fan-out, learning metrics, and Skill approval behavior.
+
+---
+
 ##  Abstract
 
 [**Objective**] The task of numerical discrepancy detection in cross-document table citations aims to determine whether a citing paper's table introduces a quotation error when referencing numerical values from a cited paper's table. To address the low efficiency and the oversight in manual verification, this study develops an automated detection strategy.
