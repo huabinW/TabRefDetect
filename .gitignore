@@ -20,6 +20,7 @@ venv/
 # Datasets: keep only the repository placeholders
 /biaoge.json
 /TabRefError/*
+!/TabRefError/README.md
 !/TabRefError/citekeypdf/
 /TabRefError/citekeypdf/*
 !/TabRefError/citekeypdf/temp

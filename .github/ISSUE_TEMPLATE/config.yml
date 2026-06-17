@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Dataset access question
+    url: https://github.com/huabinW/TabRefDetect
+    about: Please read the README dataset section before opening an issue.

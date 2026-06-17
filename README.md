@@ -126,6 +126,24 @@ paper-specific annotations are not included.
 
 ---
 
+##  Open-Source Project Files
+
+This repository includes standard open-source project files:
+
+- [`LICENSE`](LICENSE): Apache-2.0 license.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md): contribution workflow and data-safety rules.
+- [`SECURITY.md`](SECURITY.md): how to report credential, data-leakage, or unsafe-execution issues.
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md): collaboration expectations.
+- [`CITATION.cff`](CITATION.cff): citation metadata for GitHub and reference managers.
+- [`CHANGELOG.md`](CHANGELOG.md): public-facing release notes.
+- [`.github/`](.github): issue templates and pull request checklist.
+
+Please do not submit private PDFs, OCR outputs, prompts, model responses,
+human annotations, API keys, local paths, or server credentials in issues or
+pull requests.
+
+---
+
 ##  Dataset: TabRefError
 
 We introduce **TabRefError**, a human-annotated dataset for numerical discrepancy detection in cross-document table citations. It contains numerical alignment samples across diverse table types.

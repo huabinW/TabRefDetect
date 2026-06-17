@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use TabRefDetect in your research, please cite this repository."
+title: "TabRefDetect: Numerical Discrepancy Detection in Cross-Document Table Citations"
+type: software
+authors:
+  - family-names: "Wang"
+    given-names: "Huabin"
+repository-code: "https://github.com/huabinW/TabRefDetect"
+url: "https://github.com/huabinW/TabRefDetect"
+license: "Apache-2.0"
+abstract: "TabRefDetect provides research code for detecting numerical and contextual inconsistencies in cross-document scientific table citations, including table-context evidence construction, model training utilities, Codex Skills, and a LangGraph workflow agent."
+keywords:
+  - "scientific document analysis"
+  - "table citation"
+  - "numerical discrepancy detection"
+  - "table context"
+  - "workflow agent"

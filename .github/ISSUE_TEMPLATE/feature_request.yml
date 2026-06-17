@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest an improvement to the released workflow or documentation.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What research or engineering problem would this feature solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the feature and the expected inputs/outputs.
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - MinerU + PageIndex table-text tree
+        - Agent memory or learning
+        - Codex Skills
+        - Model training
+        - Evaluation
+        - Documentation
+        - Other
+  - type: textarea
+    id: data_safety
+    attributes:
+      label: Data safety considerations
+      description: Note whether the feature touches PDFs, annotations, prompts, model outputs, or credentials.

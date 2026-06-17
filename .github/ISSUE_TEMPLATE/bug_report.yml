@@ -1,0 +1,51 @@
+name: Bug report
+description: Report a reproducible problem in the released code.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please do not include private PDFs, annotations, prompts, model responses, or credentials.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the issue and the expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include commands, sanitized config snippets, and synthetic inputs if possible.
+      placeholder: |
+        1. Run ...
+        2. Observe ...
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - API clients
+        - MinerU + PageIndex table-text tree
+        - MLLM + SciBERT
+        - OCR + GLM
+        - Codex Skill
+        - LangGraph agent
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, GPU/CPU setting, and relevant package versions.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs
+      description: Paste only logs that do not contain private data or credentials.
