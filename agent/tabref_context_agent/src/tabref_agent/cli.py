@@ -16,7 +16,9 @@ from .config import AgentConfig
 from .graph import build_graph, mermaid_diagram
 from .learning import (
     approve_skill_proposal,
+    build_active_memory_pack,
     list_skill_proposals,
+    memory_stats,
     reject_skill_proposal,
 )
 
@@ -125,7 +127,7 @@ def plan_command(args: argparse.Namespace) -> None:
     print_json(
         {
             "agent": "TabRef Context Agent",
-            "version": "0.3.0",
+            "version": "0.3.1",
             "review_mode": config.review_mode,
             "workspace_root": str(config.workspace_root),
             "manifest_path": str(config.resolved_manifest_path),
@@ -135,6 +137,10 @@ def plan_command(args: argparse.Namespace) -> None:
             "learning_mode": config.learning_mode,
             "human_feedback_path": str(config.resolved_learning_feedback_path),
             "candidate_policy_path": str(config.resolved_candidate_policy_path),
+            "memory_db_path": str(config.resolved_memory_db_path),
+            "core_memory_path": str(config.resolved_core_memory_path),
+            "active_memory_pack_path": str(config.resolved_active_memory_pack_path),
+            "max_active_memory_items": config.max_active_memory_items,
             "skill_write_approval": "always_required",
             "nodes": [
                 "validate_workspace",
@@ -178,8 +184,43 @@ def learning_status_command(args: argparse.Namespace) -> None:
             "pending_skill_proposals": list_skill_proposals(
                 config.resolved_learning_output_dir
             ),
+            "memory": memory_stats(
+                config.resolved_learning_output_dir,
+                db_path=config.resolved_memory_db_path,
+                core_memory_path=config.resolved_core_memory_path,
+                active_pack_path=config.resolved_active_memory_pack_path,
+            ),
             "skill_write_approval": "always_required",
         }
+    )
+
+
+def memory_status_command(args: argparse.Namespace) -> None:
+    config = load_config(args.config)
+    print_json(
+        memory_stats(
+            config.resolved_learning_output_dir,
+            db_path=config.resolved_memory_db_path,
+            core_memory_path=config.resolved_core_memory_path,
+            active_pack_path=config.resolved_active_memory_pack_path,
+        )
+    )
+
+
+def build_memory_pack_command(args: argparse.Namespace) -> None:
+    config = load_config(args.config, create_runtime_dirs=True)
+    print_json(
+        build_active_memory_pack(
+            learning_root=config.resolved_learning_output_dir,
+            db_path=config.resolved_memory_db_path,
+            core_memory_path=config.resolved_core_memory_path,
+            active_pack_path=config.resolved_active_memory_pack_path,
+            query=args.query,
+            paper_id=args.paper_id,
+            table_label=args.table_label,
+            task_key=args.task_key,
+            max_items=args.max_items or config.max_active_memory_items,
+        )
     )
 
 
@@ -267,6 +308,28 @@ def build_parser() -> argparse.ArgumentParser:
     )
     learning_parser.add_argument("--config", type=Path, required=True)
     learning_parser.set_defaults(func=learning_status_command)
+
+    memory_parser = subparsers.add_parser(
+        "memory-status",
+        help="Inspect the structured local memory store and active memory pack.",
+    )
+    memory_parser.add_argument("--config", type=Path, required=True)
+    memory_parser.set_defaults(func=memory_status_command)
+
+    memory_pack_parser = subparsers.add_parser(
+        "build-memory-pack",
+        help="Build a budget-limited active memory pack for one run or table.",
+    )
+    memory_pack_parser.add_argument("--config", type=Path, required=True)
+    memory_pack_parser.add_argument("--query", default="table context selection")
+    memory_pack_parser.add_argument("--paper-id")
+    memory_pack_parser.add_argument("--table-label")
+    memory_pack_parser.add_argument(
+        "--task-key",
+        default="table_context_selection",
+    )
+    memory_pack_parser.add_argument("--max-items", type=int)
+    memory_pack_parser.set_defaults(func=build_memory_pack_command)
 
     approve_parser = subparsers.add_parser(
         "approve-skill",

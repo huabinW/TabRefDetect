@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tabref-context-agent"
-version = "0.3.0"
+version = "0.3.1"
 description = "A LangGraph workflow agent for auditable table-context identification."
 requires-python = ">=3.10"
 dependencies = [

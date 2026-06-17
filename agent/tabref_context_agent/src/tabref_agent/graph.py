@@ -94,7 +94,7 @@ def build_graph(
     )
     builder.add_edge("stage_skill_update", "finalize")
     builder.add_edge("finalize", END)
-    return builder.compile(checkpointer=checkpointer, name="tabref-context-agent-v0.3")
+    return builder.compile(checkpointer=checkpointer, name="tabref-context-agent-v0.3.1")
 
 
 def mermaid_diagram() -> str:

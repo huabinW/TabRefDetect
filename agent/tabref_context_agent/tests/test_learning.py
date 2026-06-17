@@ -4,9 +4,11 @@ from pathlib import Path
 from tabref_agent.learning import (
     DEFAULT_POLICY,
     approve_skill_proposal,
+    build_active_memory_pack,
     evaluate_policy,
     list_skill_proposals,
     stage_skill_proposal,
+    upsert_memory_item,
 )
 
 
@@ -95,3 +97,37 @@ def test_skill_proposal_requires_explicit_approval_and_preserves_history(
         (skill_dir / "references/version.json").read_text(encoding="utf-8")
     )["version"] == "0.3.1"
     assert Path(approved["history_snapshot"]).exists()
+
+
+def test_active_memory_pack_uses_budgeted_retrieval(tmp_path: Path):
+    learning_root = tmp_path / "learning"
+    db_path = learning_root / "memory" / "memory.sqlite"
+    for index in range(5):
+        upsert_memory_item(
+            db_path,
+            {
+                "memory_type": "case_feedback",
+                "scope": f"paper-{index}::Table 1",
+                "subject": f"candidate-{index}",
+                "content": f"Human feedback about model dataset evidence {index}",
+                "tags": ["human_gold", "table_context"],
+                "evidence": {"index": index},
+                "status": "active",
+                "confidence": 1.0,
+                "source": "test",
+                "task_key": "table_context_selection",
+            },
+        )
+
+    pack = build_active_memory_pack(
+        learning_root,
+        db_path=db_path,
+        query="model dataset evidence",
+        max_items=2,
+    )
+
+    assert pack["budget"]["available_items"] == 5
+    assert pack["budget"]["selected_items"] == 2
+    assert len(pack["core_memory"]) > 0
+    assert len(pack["retrieved_memory"]) == 2
+    assert pack["active_memory_pack_path"].endswith("active_memory_pack.json")

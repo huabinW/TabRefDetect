@@ -13,7 +13,7 @@ from tabref_agent.nodes import AgentNodes
 def test_graph_compiles(tmp_path: Path):
     config = AgentConfig(workspace_root=tmp_path)
     graph = build_graph(config)
-    assert graph.name == "tabref-context-agent-v0.3"
+    assert graph.name == "tabref-context-agent-v0.3.1"
 
 
 def test_diagram_contains_review_gate():

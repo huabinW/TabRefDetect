@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
+import sqlite3
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,6 +34,47 @@ DEFAULT_POLICY: dict[str, Any] = {
     },
 }
 
+DEFAULT_CORE_MEMORY: dict[str, Any] = {
+    "schema_version": "1.0",
+    "memory_version": "tabref-memory-0.1.0",
+    "source": "built_in_project_policy",
+    "purpose": (
+        "Small always-loaded memory for TabRef table-context selection. "
+        "Large historical examples live in SQLite and are retrieved into an "
+        "active memory pack on demand."
+    ),
+    "always_load": [
+        {
+            "id": "label_semantics",
+            "memory_type": "core_policy",
+            "content": "Project labels use 0 for correct/relevant evidence and 1 for incorrect/irrelevant evidence.",
+            "tags": ["labels", "human_gold"],
+        },
+        {
+            "id": "gold_source",
+            "memory_type": "core_policy",
+            "content": "Human child-level annotations are the only gold labels; Codex or local model outputs are provisional.",
+            "tags": ["human_gold", "learning"],
+        },
+        {
+            "id": "skill_governance",
+            "memory_type": "core_policy",
+            "content": "Skill changes must be staged as proposals, manually approved, versioned, and snapshotted before activation.",
+            "tags": ["skill", "approval"],
+        },
+        {
+            "id": "memory_budget",
+            "memory_type": "core_policy",
+            "content": "Do not load all historical memory into the agent context. Build an active memory pack from relevant, budget-limited retrieved items.",
+            "tags": ["memory", "retrieval"],
+        },
+    ],
+    "budgets": {
+        "max_active_items_default": 12,
+        "max_core_items": 16,
+    },
+}
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -51,6 +94,253 @@ def write_json(path: Path, payload: Any) -> None:
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+
+
+def stable_memory_id(*parts: Any) -> str:
+    payload = "\n".join(str(part) for part in parts)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:20]
+
+
+def default_memory_db_path(learning_root: Path) -> Path:
+    return learning_root / "memory/memory.sqlite"
+
+
+def default_core_memory_path(learning_root: Path) -> Path:
+    return learning_root / "memory/core_memory.json"
+
+
+def default_active_memory_pack_path(learning_root: Path) -> Path:
+    return learning_root / "memory/active_memory_pack.json"
+
+
+def init_memory_db(db_path: Path) -> None:
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS memory_items (
+                memory_id TEXT PRIMARY KEY,
+                memory_type TEXT NOT NULL,
+                scope TEXT NOT NULL,
+                subject TEXT NOT NULL,
+                content TEXT NOT NULL,
+                tags_json TEXT NOT NULL,
+                evidence_json TEXT NOT NULL,
+                status TEXT NOT NULL,
+                confidence REAL NOT NULL,
+                source TEXT NOT NULL,
+                task_key TEXT NOT NULL,
+                created_at_utc TEXT NOT NULL,
+                updated_at_utc TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_memory_type ON memory_items(memory_type)"
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_memory_scope ON memory_items(scope)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_memory_task ON memory_items(task_key)")
+        conn.commit()
+
+
+def bootstrap_memory_store(
+    learning_root: Path,
+    db_path: Path | None = None,
+    core_memory_path: Path | None = None,
+) -> dict[str, Any]:
+    db_path = db_path or default_memory_db_path(learning_root)
+    core_memory_path = core_memory_path or default_core_memory_path(learning_root)
+    init_memory_db(db_path)
+    if not core_memory_path.exists():
+        write_json(core_memory_path, DEFAULT_CORE_MEMORY)
+    core = read_json(core_memory_path)
+    if core.get("schema_version") != "1.0" or "always_load" not in core:
+        raise ValueError(f"Invalid core memory file: {core_memory_path}")
+    return {
+        "memory_db_path": str(db_path),
+        "core_memory_path": str(core_memory_path),
+        "core_items": len(core.get("always_load", [])),
+    }
+
+
+def upsert_memory_item(db_path: Path, item: dict[str, Any]) -> str:
+    init_memory_db(db_path)
+    now = utc_now()
+    memory_id = item.get("memory_id") or stable_memory_id(
+        item.get("memory_type", ""),
+        item.get("scope", ""),
+        item.get("subject", ""),
+        item.get("content", ""),
+    )
+    tags = item.get("tags", [])
+    evidence = item.get("evidence", {})
+    with sqlite3.connect(db_path) as conn:
+        previous = conn.execute(
+            "SELECT created_at_utc FROM memory_items WHERE memory_id = ?",
+            (memory_id,),
+        ).fetchone()
+        created = previous[0] if previous else item.get("created_at_utc", now)
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO memory_items (
+                memory_id, memory_type, scope, subject, content,
+                tags_json, evidence_json, status, confidence, source,
+                task_key, created_at_utc, updated_at_utc
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                memory_id,
+                str(item["memory_type"]),
+                str(item.get("scope", "global")),
+                str(item.get("subject", "")),
+                str(item["content"]),
+                json.dumps(tags, ensure_ascii=False, sort_keys=True),
+                json.dumps(evidence, ensure_ascii=False, sort_keys=True),
+                str(item.get("status", "active")),
+                float(item.get("confidence", 1.0)),
+                str(item.get("source", "unknown")),
+                str(item.get("task_key", "")),
+                created,
+                now,
+            ),
+        )
+        conn.commit()
+    return memory_id
+
+
+def _memory_rows(db_path: Path) -> list[dict[str, Any]]:
+    if not db_path.exists():
+        return []
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """
+            SELECT memory_id, memory_type, scope, subject, content, tags_json,
+                   evidence_json, status, confidence, source, task_key,
+                   created_at_utc, updated_at_utc
+            FROM memory_items
+            WHERE status = 'active'
+            """
+        ).fetchall()
+    result = []
+    for row in rows:
+        payload = dict(row)
+        payload["tags"] = json.loads(payload.pop("tags_json"))
+        payload["evidence"] = json.loads(payload.pop("evidence_json"))
+        result.append(payload)
+    return result
+
+
+def _rank_memory(
+    row: dict[str, Any],
+    query_terms: set[str],
+    paper_id: str | None,
+    table_label: str | None,
+    task_key: str | None,
+) -> tuple[float, str]:
+    haystack = " ".join(
+        [
+            row.get("memory_type", ""),
+            row.get("scope", ""),
+            row.get("subject", ""),
+            row.get("content", ""),
+            " ".join(row.get("tags", [])),
+            row.get("task_key", ""),
+        ]
+    ).lower()
+    score = 0.0
+    if paper_id and paper_id.lower() in haystack:
+        score += 8.0
+    if table_label and table_label.lower() in haystack:
+        score += 10.0
+    if task_key and task_key.lower() == row.get("task_key", "").lower():
+        score += 6.0
+    score += sum(1.0 for term in query_terms if term in haystack)
+    score += float(row.get("confidence", 0.0))
+    return score, row.get("updated_at_utc", "")
+
+
+def build_active_memory_pack(
+    learning_root: Path,
+    db_path: Path | None = None,
+    core_memory_path: Path | None = None,
+    active_pack_path: Path | None = None,
+    query: str = "",
+    paper_id: str | None = None,
+    table_label: str | None = None,
+    task_key: str | None = "table_context_selection",
+    max_items: int = 12,
+) -> dict[str, Any]:
+    db_path = db_path or default_memory_db_path(learning_root)
+    core_memory_path = core_memory_path or default_core_memory_path(learning_root)
+    active_pack_path = active_pack_path or default_active_memory_pack_path(learning_root)
+    bootstrap_memory_store(learning_root, db_path, core_memory_path)
+    core = read_json(core_memory_path)
+    query_terms = {
+        term.lower()
+        for term in re.findall(r"[A-Za-z0-9_]+", query)
+        if len(term) >= 3
+    }
+    ranked = sorted(
+        _memory_rows(db_path),
+        key=lambda row: _rank_memory(row, query_terms, paper_id, table_label, task_key),
+        reverse=True,
+    )
+    selected = ranked[:max_items]
+    pack = {
+        "schema_version": "1.0",
+        "created_at_utc": utc_now(),
+        "query": query,
+        "filters": {
+            "paper_id": paper_id,
+            "table_label": table_label,
+            "task_key": task_key,
+        },
+        "budget": {
+            "max_items": max_items,
+            "selected_items": len(selected),
+            "available_items": len(ranked),
+        },
+        "core_memory": core.get("always_load", []),
+        "retrieved_memory": selected,
+        "usage_note": (
+            "This pack is the only long-term memory payload intended for an "
+            "agent run. The full SQLite store should be searched, not fully "
+            "loaded into the model context."
+        ),
+    }
+    write_json(active_pack_path, pack)
+    return {**pack, "active_memory_pack_path": str(active_pack_path)}
+
+
+def memory_stats(
+    learning_root: Path,
+    db_path: Path | None = None,
+    core_memory_path: Path | None = None,
+    active_pack_path: Path | None = None,
+) -> dict[str, Any]:
+    db_path = db_path or default_memory_db_path(learning_root)
+    core_memory_path = core_memory_path or default_core_memory_path(learning_root)
+    active_pack_path = active_pack_path or default_active_memory_pack_path(learning_root)
+    bootstrap = bootstrap_memory_store(learning_root, db_path, core_memory_path)
+    counts: dict[str, int] = {}
+    with sqlite3.connect(db_path) as conn:
+        for memory_type, count in conn.execute(
+            "SELECT memory_type, COUNT(*) FROM memory_items GROUP BY memory_type"
+        ).fetchall():
+            counts[str(memory_type)] = int(count)
+    active_items = 0
+    if active_pack_path.exists():
+        active_items = len(read_json(active_pack_path).get("retrieved_memory", []))
+    return {
+        **bootstrap,
+        "active_memory_pack_path": str(active_pack_path),
+        "active_memory_pack_exists": active_pack_path.exists(),
+        "active_memory_items": active_items,
+        "stored_memory_items": sum(counts.values()),
+        "stored_memory_by_type": counts,
+    }
 
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -379,13 +669,24 @@ def build_reflection(
     reviewed_path: Path,
     learning_root: Path,
     optimization: dict[str, Any],
+    memory_db_path: Path | None = None,
+    core_memory_path: Path | None = None,
+    active_memory_pack_path: Path | None = None,
+    max_active_memory_items: int = 12,
 ) -> dict[str, Any]:
+    memory_db_path = memory_db_path or default_memory_db_path(learning_root)
+    core_memory_path = core_memory_path or default_core_memory_path(learning_root)
+    active_memory_pack_path = active_memory_pack_path or default_active_memory_pack_path(
+        learning_root
+    )
+    bootstrap_memory_store(learning_root, memory_db_path, core_memory_path)
     feedback = load_jsonl(feedback_path)
     candidates = {candidate_key(row): row for row in load_jsonl(candidate_path)}
     reviewed_rows = read_json(reviewed_path) if reviewed_path.exists() else []
     reviewed = {candidate_key(row): row for row in reviewed_rows}
     error_counts: dict[str, int] = {}
     memory_events = []
+    sqlite_memory_ids = []
     for gold in feedback:
         key = feedback_key(gold)
         predicted_row = reviewed.get(key)
@@ -419,6 +720,38 @@ def build_reflection(
                 "signals": signals,
             }
         )
+        label_text = "relevant" if gold["gold_label"] == 0 else "irrelevant"
+        sqlite_memory_ids.append(
+            upsert_memory_item(
+                memory_db_path,
+                {
+                    "memory_type": "case_feedback",
+                    "scope": f"{gold['slug']}::{gold['table_label']}",
+                    "subject": f"{gold['candidate_id']}::{gold['child_id']}",
+                    "content": (
+                        f"Human gold marked this table-context child as {label_text}; "
+                        f"Codex outcome was {category}."
+                    ),
+                    "tags": [
+                        "human_gold",
+                        f"label_{gold['gold_label']}",
+                        category,
+                        str(gold.get("error_category") or "uncategorized"),
+                    ],
+                    "evidence": {
+                        "key": list(key),
+                        "gold_label": gold["gold_label"],
+                        "codex_label": predicted,
+                        "comment": gold.get("comment"),
+                        "signals": signals,
+                    },
+                    "status": "active",
+                    "confidence": 1.0,
+                    "source": "human_feedback",
+                    "task_key": "table_context_selection",
+                },
+            )
+        )
     if memory_events:
         append_jsonl(learning_root / "memory/events.jsonl", memory_events)
 
@@ -439,6 +772,45 @@ def build_reflection(
                 "source": "human_gold_false_negatives",
             }
         )
+    for lesson in lessons:
+        sqlite_memory_ids.append(
+            upsert_memory_item(
+                memory_db_path,
+                {
+                    "memory_type": "learned_rule",
+                    "scope": "tabref-table-text-child-selector",
+                    "subject": lesson["source"],
+                    "content": lesson["rule"],
+                    "tags": ["human_gold", "selector_rule", lesson["source"]],
+                    "evidence": {"support": lesson["support"]},
+                    "status": "active",
+                    "confidence": min(1.0, 0.5 + lesson["support"] / 20.0),
+                    "source": "background_reflection",
+                    "task_key": "table_context_selection",
+                },
+            )
+        )
+    if optimization:
+        sqlite_memory_ids.append(
+            upsert_memory_item(
+                memory_db_path,
+                {
+                    "memory_type": "threshold_policy",
+                    "scope": "candidate_policy",
+                    "subject": str(optimization.get("status", "unknown")),
+                    "content": (
+                        "Latest candidate-policy optimization status: "
+                        f"{optimization.get('status', 'unknown')}."
+                    ),
+                    "tags": ["threshold", "policy", str(optimization.get("status", ""))],
+                    "evidence": optimization,
+                    "status": "active",
+                    "confidence": 0.8,
+                    "source": "policy_optimization",
+                    "task_key": "table_context_selection",
+                },
+            )
+        )
     reflection = {
         "schema_version": "1.0",
         "created_at_utc": utc_now(),
@@ -446,12 +818,32 @@ def build_reflection(
         "error_counts": error_counts,
         "optimization": optimization,
         "lessons": lessons,
+        "memory_store": {
+            "db_path": str(memory_db_path),
+            "core_memory_path": str(core_memory_path),
+            "upserted_memory_ids": sqlite_memory_ids,
+        },
         "codex_is_training_gold": False,
     }
     path = learning_root / "reflections" / f"reflection_{safe_timestamp()}.json"
     write_json(path, reflection)
     write_json(learning_root / "memory/lessons.json", {"lessons": lessons})
+    active_pack = build_active_memory_pack(
+        learning_root=learning_root,
+        db_path=memory_db_path,
+        core_memory_path=core_memory_path,
+        active_pack_path=active_memory_pack_path,
+        query="table context child selector human feedback threshold skill proposal",
+        task_key="table_context_selection",
+        max_items=max_active_memory_items,
+    )
+    reflection["active_memory_pack"] = {
+        "path": active_pack["active_memory_pack_path"],
+        "selected_items": active_pack["budget"]["selected_items"],
+        "available_items": active_pack["budget"]["available_items"],
+    }
     reflection["reflection_path"] = str(path)
+    write_json(path, reflection)
     return reflection
 
 

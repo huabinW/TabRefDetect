@@ -15,6 +15,9 @@ TabRefDetect is an automated framework designed to detect whether a citing paper
 - **Agent engineering**: includes a LangGraph workflow agent for table-context
   identification with checkpointing, parallel review, human feedback, and
   Skill approval gates.
+- **Structured agent memory**: stores stable rules in core JSON, growing
+  human-feedback experience in local SQLite, and only injects a budget-limited
+  active memory pack into each run.
 - **Hybrid review design**: separates deterministic high-recall candidate
   generation from Codex or future local-model semantic precision review.
 - **Model-ready outputs**: preserves table anchors, full parent paragraphs,
@@ -30,10 +33,12 @@ TabRefDetect is an automated framework designed to detect whether a citing paper
 - Implements **paper-level parallel review** using LangGraph `Send`.
 - Includes **controlled self-learning** from human annotations with recall and
   table-coverage guardrails.
+- Adds **scalable local memory**: core rules, SQLite long-term memory, and
+  retrieved active memory packs instead of full-history loading.
 - Maintains **Skill version governance**: pending proposals, explicit human
   approval, and history snapshots.
-- Ships with **18 unit tests** covering routing, graph compilation, parallel
-  fan-out, learning metrics, and Skill approval behavior.
+- Ships with unit tests covering routing, graph compilation, parallel fan-out,
+  learning metrics, structured memory, and Skill approval behavior.
 
 ---
 
@@ -183,9 +188,10 @@ This agent orchestrates deterministic table-context preprocessing, review
 package preparation, Codex or existing-decision routing, paper-level parallel
 review, and a controlled human-feedback learning loop. It demonstrates a
 research-grade agent workflow with checkpoints, auditable evidence, Skill
-proposal approval, and a path toward replacing Codex review with a local
-classifier. It releases reusable code and sanitized configuration templates
-only; local runtime outputs and annotations are not included.
+proposal approval, structured local memory, and a path toward replacing Codex
+review with a local classifier. It releases reusable code and sanitized
+configuration templates only; local runtime outputs and annotations are not
+included.
 
 ---
 

@@ -28,6 +28,12 @@ class AgentConfig(BaseModel):
         "batch_table_text_tree/learning/candidate_policy/active.json"
     )
     learning_output_dir: Path = Path("batch_table_text_tree/learning")
+    memory_db_path: Path = Path("batch_table_text_tree/learning/memory/memory.sqlite")
+    core_memory_path: Path = Path("batch_table_text_tree/learning/memory/core_memory.json")
+    active_memory_pack_path: Path = Path(
+        "batch_table_text_tree/learning/memory/active_memory_pack.json"
+    )
+    max_active_memory_items: int = Field(default=12, ge=1, le=50)
     selector_skill_dir: Path = Field(
         default_factory=lambda: (
             Path.home() / ".codex/skills/tabref-table-text-child-selector"
@@ -70,6 +76,18 @@ class AgentConfig(BaseModel):
     @property
     def resolved_learning_output_dir(self) -> Path:
         return self.resolve_path(self.learning_output_dir)
+
+    @property
+    def resolved_memory_db_path(self) -> Path:
+        return self.resolve_path(self.memory_db_path)
+
+    @property
+    def resolved_core_memory_path(self) -> Path:
+        return self.resolve_path(self.core_memory_path)
+
+    @property
+    def resolved_active_memory_pack_path(self) -> Path:
+        return self.resolve_path(self.active_memory_pack_path)
 
     @property
     def resolved_selector_skill_dir(self) -> Path:

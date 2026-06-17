@@ -93,17 +93,40 @@ reviewed in parallel and joined at a strict validation barrier.
 
 ### Stage 4: Controlled Self-Learning
 
-Version `0.3.0` adds a learning loop:
+Version `0.3.1` includes a controlled learning loop:
 
 - Human child-level annotations are the only gold labels.
 - Candidate-policy weights and thresholds can be optimized automatically when
   recall and per-table coverage guardrails pass.
-- Memory and reflection files record human corrections and learned lessons.
+- Memory and reflection outputs record human corrections and learned lessons.
 - Skill text changes are never applied automatically. The agent stages a
   pending proposal, and a human must approve it before the live Skill changes.
 
 This design borrows the useful parts of self-improving agents while keeping an
 explicit approval gate.
+
+### Stage 5: Structured Local Memory
+
+The agent does not read a growing pile of historical memory files into the
+model context. Instead, it separates memory into three local layers:
+
+- **Core memory**: a small JSON policy file that is always safe to load. It
+  stores stable project rules such as label semantics, human-gold priority,
+  Skill approval requirements, and memory budget policy.
+- **Long-term memory store**: a local SQLite database for growing historical
+  records, including human feedback cases, learned selector rules, and
+  threshold-policy observations.
+- **Active memory pack**: a compact JSON file generated before or after a run.
+  It contains the core memory plus only the most relevant retrieved memories
+  under a fixed item budget.
+
+This makes the memory system scalable: storage can grow with additional papers
+and annotations, while each agent run sees only a small, auditable memory pack.
+The default active pack is:
+
+```text
+batch_table_text_tree/learning/memory/active_memory_pack.json
+```
 
 ## Main Features
 
@@ -116,6 +139,8 @@ explicit approval gate.
   table anchor, page metadata, and text hash.
 - **Safe learning**: human-feedback-only policy optimization with recall
   guardrails.
+- **Structured local memory**: core rules, SQLite long-term memory, and
+  budget-limited active memory packs.
 - **Skill governance**: pending Skill proposals, version checks, and history
   snapshots before approval.
 - **Model-replaceable design**: Codex review can later be replaced by a local
@@ -129,8 +154,9 @@ explicit approval gate.
 | Review modes | `prepare`, `codex`, `existing`, `manual` |
 | Learning modes | `off`, `analyze`, `propose` |
 | Parallelism | Paper-level fan-out/fan-in with LangGraph `Send` |
+| Memory | Core JSON + local SQLite + budget-limited active memory pack |
 | Governance | Skill proposals require human approval and history snapshots |
-| Tests | 18 unit tests for config, routing, graph behavior, learning, and approval |
+| Tests | Unit tests for config, routing, graph behavior, learning, memory, and approval |
 | Extensibility | Codex semantic review can be replaced by a local classifier or reranker |
 
 ## Repository Layout
@@ -231,6 +257,21 @@ Inspect learning status:
 
 ```bash
 python -m tabref_agent.cli learning-status --config config.local.json
+```
+
+Inspect local memory status:
+
+```bash
+python -m tabref_agent.cli memory-status --config config.local.json
+```
+
+Build a small active memory pack without running the full workflow:
+
+```bash
+python -m tabref_agent.cli build-memory-pack \
+  --config config.local.json \
+  --query "table context child selector threshold policy" \
+  --max-items 12
 ```
 
 Approve a pending Skill proposal after manual review:

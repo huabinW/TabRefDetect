@@ -10,7 +10,12 @@ from typing import Any
 from langgraph.types import interrupt
 
 from .config import AgentConfig
-from .learning import build_reflection, optimize_policy, stage_skill_proposal
+from .learning import (
+    build_active_memory_pack,
+    build_reflection,
+    optimize_policy,
+    stage_skill_proposal,
+)
 from .state import AgentState
 from .tools import ProjectToolRunner, append_event, load_json
 
@@ -65,6 +70,9 @@ def _artifact_map(config: AgentConfig) -> dict[str, str]:
         "human_learning_feedback": str(config.resolved_learning_feedback_path),
         "active_candidate_policy": str(config.resolved_candidate_policy_path),
         "learning_output": str(config.resolved_learning_output_dir),
+        "memory_db": str(config.resolved_memory_db_path),
+        "core_memory": str(config.resolved_core_memory_path),
+        "active_memory_pack": str(config.resolved_active_memory_pack_path),
     }
 
 
@@ -172,17 +180,31 @@ class AgentNodes:
         manifest = load_json(manifest_path)
         documents = [document["slug"] for document in manifest.get("documents", [])]
         self.config.resolved_output_dir.mkdir(parents=True, exist_ok=True)
+        active_memory = build_active_memory_pack(
+            learning_root=self.config.resolved_learning_output_dir,
+            db_path=self.config.resolved_memory_db_path,
+            core_memory_path=self.config.resolved_core_memory_path,
+            active_pack_path=self.config.resolved_active_memory_pack_path,
+            query="table context evidence selection parent child threshold policy",
+            task_key="table_context_selection",
+            max_items=self.config.max_active_memory_items,
+        )
         return {
             "stage": "validate_workspace",
             "status": "running",
             "documents": documents,
             "artifacts": _artifact_map(self.config),
-            "metrics": {"document_count": len(documents)},
+            "metrics": {
+                "document_count": len(documents),
+                "active_memory_items": active_memory["budget"]["selected_items"],
+                "available_memory_items": active_memory["budget"]["available_items"],
+            },
             "events": append_event(
                 state,
                 "validate_workspace",
-                "Manifest and project tools validated.",
+                "Manifest, project tools, and active memory pack validated.",
                 document_count=len(documents),
+                active_memory_items=active_memory["budget"]["selected_items"],
             ),
         }
 
@@ -511,18 +533,30 @@ class AgentNodes:
             reviewed_path=self.config.workspace_root / REVIEWED_CHILDREN,
             learning_root=self.config.resolved_learning_output_dir,
             optimization=optimization,
+            memory_db_path=self.config.resolved_memory_db_path,
+            core_memory_path=self.config.resolved_core_memory_path,
+            active_memory_pack_path=self.config.resolved_active_memory_pack_path,
+            max_active_memory_items=self.config.max_active_memory_items,
         )
         learning = dict(state.get("learning", {}))
         learning["reflection"] = reflection
+        metrics = dict(state.get("metrics", {}))
+        active_pack = reflection.get("active_memory_pack", {})
+        metrics["active_memory_items"] = active_pack.get(
+            "selected_items",
+            metrics.get("active_memory_items"),
+        )
         return {
             "stage": "background_reflection",
             "learning": learning,
+            "metrics": metrics,
             "events": append_event(
                 state,
                 "background_reflection",
-                "Recorded human-grounded memory events and a post-run reflection.",
+                "Recorded human-grounded memory events, SQLite memories, and a post-run reflection.",
                 human_feedback=reflection["human_feedback_count"],
                 learned_rules=len(reflection["lessons"]),
+                active_memory_items=active_pack.get("selected_items"),
             ),
         }
 
@@ -555,7 +589,7 @@ class AgentNodes:
 
         payload = {
             "schema_version": "1.0",
-            "agent_version": "0.3.0",
+            "agent_version": "0.3.1",
             "job_id": state.get("job_id"),
             "thread_id": state.get("thread_id"),
             "status": terminal_status,
