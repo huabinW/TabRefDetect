@@ -51,6 +51,28 @@ final_child_label
 final_child_label_source
 ```
 
+For the table-scope precision-v2 stage:
+
+```text
+final_child_label_source = codex_table_scope_precision_review_v2
+```
+
+For the manually reaudited supplementary-context stage:
+
+```text
+final_child_label_source = codex_supplementary_context_reaudit_v3
+```
+
+Precision-v2 validation requirements:
+
+- Every strict high-recall child must receive exactly one Codex decision.
+- Existing human labels are binding and a Codex decision cannot contradict them.
+- Label `1` must use `semantic_role = irrelevant` and `citation_support = none`.
+- A table may retain zero Codex label-`0` children.
+- The retained human template is a view over all reviewed children; it must not replace or delete the complete reviewed artifact.
+- Direct result restatements and promotional efficacy claims are label `1`.
+- Result interpretations are label `0` only when they add a necessary limitation, metric behavior, dataset difference, or cross-study qualification not visible in the table.
+
 Learning and approval artifacts:
 
 ```text

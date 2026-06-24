@@ -10,8 +10,9 @@ TabRefDetect is an automated framework designed to detect whether a citing paper
 
 - **Research problem**: detects numerical and contextual inconsistencies in
   cross-document scientific table citations.
-- **Document intelligence pipeline**: combines MinerU OCR, PageIndex-style
-  document structure, table-text trees, and auditable evidence preservation.
+- **Document intelligence pipeline**: combines MinerU OCR, MinerU-Popo document
+  trees, PageIndex-style structure logic, table-text trees, and auditable
+  evidence preservation.
 - **Agent engineering**: includes a LangGraph workflow agent for table-context
   identification with checkpointing, parallel review, human feedback, and
   Skill approval gates.
@@ -65,16 +66,18 @@ settings. Conversely, different values may be justified when the citing and
 cited papers report genuinely different experiments.
 
 TabRefDetect therefore includes a document-structure and evidence-construction
-pipeline based on **MinerU and PageIndex**. Its research purpose is to preserve
-the context required to distinguish justified experimental differences from
-probable table citation errors.
+pipeline based on **MinerU, MinerU-Popo, and PageIndex-style structure logic**.
+Its research purpose is to preserve the context required to distinguish
+justified experimental differences from probable table citation errors.
 
-### MinerU + PageIndex workflow
+### MinerU + MinerU-Popo + PageIndex-style workflow
 
 - **MinerU** parses each approved PDF into page-level text blocks, table HTML,
   captions, images, bounding boxes, footnotes, and reading-order information.
-- **PageIndex** provides the hierarchical document structure and page ranges
-  needed to locate tables within sections and subsections.
+- **MinerU-Popo** provides the current local document text tree for new
+  table-text-context construction.
+- **PageIndex-style structure logic** remains useful as an auditable hierarchy
+  pattern and historical baseline for section/page organization.
 - The structure tree is reviewed or constructed from available document
   evidence, then combined with MinerU output to form an auditable
   **table-text tree**.
@@ -110,6 +113,10 @@ The second-stage selector keeps the complete parent paragraph together with
 each candidate child block. It uses `0 = correct/relevant` and
 `1 = incorrect/irrelevant`. Codex decisions remain provisional silver labels
 until they are compared with human annotations.
+
+The current Popo review path uses a standard one-package-per-agent prompt,
+keeps captions as table-anchor fields rather than child candidates, and writes
+both compact human-annotation templates and full-audit outputs for traceability.
 
 Reusable Codex workflows are released in [`skill/`](skill/):
 

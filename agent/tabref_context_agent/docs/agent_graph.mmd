@@ -1,0 +1,21 @@
+flowchart TD
+    A[validate_workspace] --> B[build_evidence_trees]
+    B --> C[audit_evidence_trees]
+    C --> D[materialize_annotations]
+    D --> E[build_recall_candidates]
+    E --> F[prepare_review_packages]
+    F --> G{review_gate}
+    G -->|codex| H[Send: review_one_paper x N]
+    G -->|existing decisions| I[materialize_results]
+    G -->|prepare only| J[finalize awaiting review]
+    G -->|manual| K[LangGraph interrupt]
+    K --> I
+    H --> M[aggregate_codex_reviews]
+    M --> I
+    I --> N{learning_mode}
+    N -->|off| L[finalize completed]
+    N -->|analyze/propose| O[optimize_candidate_policy]
+    O --> P[background_reflection]
+    P -->|analyze| L
+    P -->|propose| Q[stage_skill_update pending approval]
+    Q --> L

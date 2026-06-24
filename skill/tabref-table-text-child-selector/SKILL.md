@@ -5,7 +5,7 @@ description: Select and audit the smallest body-text child blocks that describe 
 
 # TabRef Table Text Child Selector
 
-Current version: `0.3.0`.
+Current version: `0.5.1`.
 
 Find the minimal body-text spans that describe a table while preserving their complete parent paragraphs and original MinerU traceability.
 
@@ -35,11 +35,13 @@ Do not:
 2. Confirm parent labels use `0 = correct/relevant`, `1 = incorrect/irrelevant`.
 3. Run `scripts/select_table_description_child_blocks.py`.
 4. Preserve every child under a correct parent so the code stage maximizes recall.
-5. Use `send_to_semantic_review` to decide which preserved children enter the second-stage semantic review queue.
-5. Run `scripts/prepare_codex_child_review_packages.py`.
-6. Run `scripts/run_codex_child_semantic_review.py`, or read each package in the current Codex session and write its decisions.
-7. Run `scripts/materialize_codex_child_review_results.py` to validate completeness and produce final outputs.
-8. Report preserved code-stage candidates, semantic-review candidates, Codex final labels, and human gold separately.
+5. For strict Popo review sets, send the complete high-recall set to Codex. Do not apply a code precision filter before semantic review.
+6. Run `scripts/prepare_codex_child_review_packages.py`.
+7. Run a five-agent review when several papers can be reviewed independently:
+   assign one package to one Codex agent and use `references/five-agent-review-prompt.md`.
+8. Run `scripts/run_codex_child_semantic_review.py`, or read each package in the current Codex session and write its decisions.
+9. Run `scripts/materialize_codex_child_review_results.py` to validate completeness and produce final outputs.
+10. Report preserved code-stage candidates, semantic-review candidates, Codex final labels, and human gold separately.
 
 Default project command:
 
@@ -73,9 +75,10 @@ An active candidate policy may update:
 - The review threshold.
 - Force-review signals, such as explicit table references.
 
-Policy learning must use human child-level feedback only. It may reduce the
-review queue after meeting recall and per-table coverage guardrails, but it
-must keep all original child evidence in the full dataset.
+Policy learning must use human child-level feedback only. It may rank the
+review queue, but it must not remove strict candidates before Codex review
+unless human-label validation has demonstrated the required recall and
+per-table coverage. Keep all original child evidence in the full dataset.
 
 ## Codex Precision Review
 
@@ -83,12 +86,54 @@ Judge each high-recall candidate from the table caption/body, complete parent pa
 
 Assign `0` when the child:
 
-- Introduces what the table contains.
-- Supplies table-scoped datasets, models, metrics, prompts, shots, splits, baselines, training settings, or other experimental conditions.
-- Interprets, compares, qualifies, or limits the table results.
-- Provides evidence useful to later citation-reference judgment.
+- Supplies information not already visible in the table that is required to
+  interpret, reproduce, or verify it.
+- Gives table-scoped datasets, splits, prompts, shots, metrics, evaluation
+  protocols, baseline definitions, configurations, training settings, or
+  experimental constraints.
+- Gives a necessary limitation, metric behavior, dataset difference, or
+  cross-study comparability qualification that cannot be read directly from
+  the table.
 
-Assign `1` when the child is generic background, a transition or heading fragment, redundant, unrelated, or insufficiently table-scoped.
+Assign `1` when the child:
+
+- Only says the table shows, reports, summarizes, lists, or compares content
+  already visible in the table.
+- Describes a model innovation, method background, implementation detail, or
+  general performance claim that is related to the topic but outside the
+  table's intended content.
+- Belongs to another table, figure, experiment, dataset, model variant, or
+  evaluation scope.
+- Directly restates a gain, gap, trend, best score, or comparison already
+  visible in the table.
+- Uses the table to make a promotional efficacy, capability, or generalizability
+  claim without adding separate table-scoped conditions.
+- Is generic background, a transition, a heading fragment, redundant,
+  unrelated, or insufficiently table-scoped.
+
+Use the supplementary-context test:
+
+```text
+Does this child add information not already visible in the table that is
+needed to interpret, reproduce, or verify it?
+```
+
+If the answer is no, assign `1`. A relevant parent paragraph does not make
+every child relevant. A table may legitimately retain zero child spans.
+
+Being supported by the table is not sufficient for label `0`. A result
+interpretation is retained only when it contributes a necessary limitation,
+metric behavior, dataset difference, or cross-study qualification beyond the
+visible values.
+
+Existing human labels are binding gold constraints during review. Codex must
+copy them exactly and use their rationales as feedback. Code scores and lexical
+overlap are ranking aids only.
+
+Do not hard-code historical retained counts, paper-specific outcomes, or
+previous decision files into a normal review prompt. A standard review prompt
+should name only the current package, output path, and schema contract. Previous
+decisions are inputs only in an explicit comparison or audit mode.
 
 Record `semantic_role`, `citation_support`, and a concise rationale. The code may validate and materialize these fields, but it must not invent them.
 
@@ -109,6 +154,10 @@ Maintain four distinct artifacts:
 - Codex review packages containing complete evidence.
 - Final Codex-reviewed JSON/JSONL.
 - Human-readable Markdown listing retained label `0` and Codex-demoted label `1` separately after every table.
+- Slim human annotation JSON/Markdown containing only necessary annotation
+  fields, with a top-level candidate list per table.
+- Full audit JSON files containing all original table, parent, child, score,
+  decision, page, bbox, and MinerU traceability fields.
 
 Treat the score as an interpretable ranking aid, not a calibrated probability.
 
@@ -124,13 +173,29 @@ candidate_policy_version = candidate-policy-...
 Mark final model decisions:
 
 ```text
-final_child_label_source = codex_semantic_review_v1
+final_child_label_source = codex_skill_0_5_x_supplementary_review
 ```
 
 Never present code candidates or Codex decisions as human gold labels.
 
-The automated launcher starts one Codex CLI review per paper and materializes
-results only after every expected decision file exists and passes validation.
+The recommended repeatable path starts one Codex review per paper/package and
+materializes results only after every expected decision file exists and passes
+validation. When token budget is constrained, stop after package preparation,
+review only missing packages, and resume by checking missing decision files
+instead of re-reading already completed outputs.
+
+## Table Captions
+
+Every table should carry a `table_caption` or `table_anchor.caption` field in
+final outputs. The caption is part of the table anchor, not a reviewed child
+candidate. Use the caption-resolution stage to fill or normalize captions when
+MinerU/Popo table anchors are empty or contain shared captions, and record the
+caption source/status for audit.
+
+Human annotation files should be compact: keep table label, table caption, table
+body, parent text, child text, offsets, hashes, Codex decision, and empty human
+label/rationale fields. Keep full traceability fields in separate full-audit
+files.
 
 ## Controlled Self-Learning
 

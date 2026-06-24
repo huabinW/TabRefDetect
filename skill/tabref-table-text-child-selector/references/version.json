@@ -1,13 +1,13 @@
 {
   "skill": "tabref-table-text-child-selector",
-  "version": "0.3.0",
+  "version": "0.5.1",
   "label_semantics": {
     "0": "correct/relevant",
     "1": "incorrect/irrelevant"
   },
-  "child_label_status": "code stage preserves recall; active candidate policy controls the semantic-review queue; Codex stage supplies provisional semantic precision labels until compared with user gold",
+  "child_label_status": "code stage preserves the complete strict high-recall pool; Codex applies a supplementary-context precision review with a reusable five-agent prompt; captions are preserved as table-anchor fields and are not child candidates; Codex labels remain provisional until compared with user gold",
   "learning_contract": {
-    "candidate_policy_auto_update": "human_gold_only_with_recall_and_table_coverage_guardrails",
+    "candidate_policy_auto_update": "human_gold_only_with recall and table coverage guardrails; no strict-candidate deletion before validated calibration",
     "skill_update": "pending_proposal_requires_human_approval_and_history_snapshot",
     "codex_labels_are_gold": false
   }

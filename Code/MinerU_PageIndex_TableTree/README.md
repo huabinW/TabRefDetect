@@ -49,6 +49,11 @@ page positions, so they must be treated as private experiment artifacts.
 | `prepare_codex_child_review_packages.py` | Package table, parent, and child evidence for Codex semantic review. |
 | `run_codex_child_semantic_review.py` | Launch one Codex precision-review task per document. |
 | `materialize_codex_child_review_results.py` | Validate and materialize final Codex labels. |
+| `popo_workflow_helpers.py` | Shared MinerU-Popo text/table scoring helpers. |
+| `prepare_popo_strict_human_child_annotation_packages.py` | Build a Popo strict high-recall child-candidate annotation pool. |
+| `prepare_popo_codex_precision_review_packages.py` | Package Popo strict candidates for Codex semantic precision review. |
+| `run_popo_codex_precision_review.py` | Launch or dry-run one Codex review per Popo package. |
+| `materialize_popo_codex_precision_review_results.py` | Validate Popo Codex decisions and write slim annotation plus full-audit outputs. |
 | `run_local_table_text_training_pipeline.py` | Run the deterministic preparation stages in sequence. |
 
 ## Configuration
@@ -165,6 +170,24 @@ Then perform and validate the Codex precision stage:
 python run_codex_child_semantic_review.py --manifest manifest.json
 python materialize_codex_child_review_results.py --manifest manifest.json
 ```
+
+### MinerU-Popo strict workflow
+
+For the MinerU-Popo branch, use Popo `type=text` nodes as candidate parents and
+keep the code stage recall-oriented:
+
+```powershell
+python prepare_popo_strict_human_child_annotation_packages.py
+python prepare_popo_codex_precision_review_packages.py
+python run_popo_codex_precision_review.py --dry-run
+python materialize_popo_codex_precision_review_results.py
+```
+
+The normal review path is one package per Codex agent with the standard prompt
+from `skill/tabref-table-text-child-selector/references/five-agent-review-prompt.md`.
+The materializer writes a compact `*.slim.json` template for human annotation
+and separate full-audit JSON files for traceability. Captions are preserved as
+table-anchor fields and are not reviewed as child candidates.
 
 The corresponding Codex Skills are published under the repository-level
 [`skill/`](../../skill/) directory.
