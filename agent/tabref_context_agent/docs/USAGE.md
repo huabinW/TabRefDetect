@@ -61,27 +61,32 @@ Then run:
 
 To regenerate existing decision files, add `--force-codex-review`.
 
-### Preferred Five-Agent Review
+### Preferred Subagent Review
 
-For independent paper packages, prefer the five-agent Codex path in the desktop
-app when available:
+For independent paper packages, let the current desktop conversation coordinate
+the Codex subagents. The number of subagents is dynamic and may be smaller than,
+equal to, or larger than the paper count depending on package independence,
+available concurrency, token budget, and retry state:
 
 1. Run prepare mode or `prepare_popo_codex_precision_review_packages.py`.
 2. Read the installed `tabref-table-text-child-selector` Skill.
-3. Open `references/five-agent-review-prompt.md` from the Skill.
-4. Spawn one Codex agent per package or shard.
+3. Open `references/subagent-review-prompt.md` from the Skill.
+4. Assign every package a unique decision path. Spawn one subagent per package
+   when practical, or queue packages through fewer subagents.
 5. Fill only `{PACKAGE_JSON_OR_MD}`, `{DECISION_JSON}`, and `{SLUG}` in the
    standard prompt.
-6. Wait until every expected decision JSON exists.
-7. Run the materializer in existing-decision mode.
+6. Track expected, completed, missing, and invalid decision files in the package
+   status or coordinator manifest.
+7. Run the materializer in existing-decision mode only after every expected
+   decision JSON passes validation.
 
 Do not put old decision files, retained counts, or paper-specific conclusions
 into a normal review prompt. Use previous outputs only after materialization,
 in an explicit comparison/audit pass.
 
 When model usage is constrained, stop after package preparation. On resume,
-inspect the package-status file, spawn agents only for missing decision files,
-and skip packages that already have valid decisions.
+inspect the package-status or coordinator manifest, assign only missing or
+invalid decision files, and skip packages that already have valid decisions.
 
 ## 5. Reuse Existing Decisions
 

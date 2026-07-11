@@ -10,10 +10,15 @@ from typing import Any
 PROJECT_ROOT = Path(__file__).resolve().parent
 
 from popo_workflow_helpers import (
+    TABLE_ANCHOR_MATCH_MAX_COORD_DELTA,
+    TABLE_ANCHOR_MATCH_MIN_IOU,
+    TABLE_ANCHOR_MATCH_POLICY,
+    TABLE_ANCHOR_MATCH_THRESHOLD_BASIS,
     candidate_signals,
     child_score,
     extract_popo_nodes,
     load_json,
+    match_table_anchors,
     table_anchor_by_order,
 )
 
@@ -140,6 +145,7 @@ def make_child_row(
             "block_ids": popo_table.get("block_ids"),
             "page_indices": popo_table.get("page_indices"),
             "ancestor_titles": popo_table.get("ancestor_titles"),
+            "anchor_match": popo_table.get("anchor_match"),
         },
         "candidate_id": f"{table_anchor['canonical_label'].lower().replace(' ', '-')}-{text_node['node_id']}",
         "parent_paragraph_id": text_node["node_id"],
@@ -282,9 +288,14 @@ def build_selected_rows(
     child_score_threshold: int,
     min_children_per_table: int,
     max_children_per_table: int,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+]:
     selected_rows = []
     audit_failures = []
+    table_anchor_match_audits = []
     for document in manual.get("documents") or []:
         slug = document["slug"]
         tree_path = tree_dir / f"{slug}.json"
@@ -294,19 +305,24 @@ def build_selected_rows(
         tree = load_json(tree_path)
         text_nodes, table_nodes = extract_popo_nodes(tree, slug)
         anchors = table_anchor_by_order(document)
-        if len(anchors) != len(table_nodes):
+        anchor_match_audit = match_table_anchors(anchors, table_nodes)
+        table_anchor_match_audits.append({"slug": slug, **anchor_match_audit})
+        if anchor_match_audit["status"] != "pass":
             audit_failures.append(
                 {
                     "slug": slug,
-                    "reason": "table_count_mismatch",
-                    "manual_table_count": len(anchors),
-                    "popo_table_count": len(table_nodes),
+                    "reason": "table_anchor_match_failed",
+                    "details": anchor_match_audit["failures"],
                 }
             )
-        for table_index, table_anchor in enumerate(anchors):
-            if table_index >= len(table_nodes):
-                continue
-            popo_table = table_nodes[table_index]
+            continue
+        for anchor_match in anchor_match_audit["matches"]:
+            table_index = anchor_match["anchor_index"]
+            table_anchor = anchors[table_index]
+            popo_table = {
+                **table_nodes[anchor_match["popo_table_index"]],
+                "anchor_match": anchor_match,
+            }
             threshold_rows = table_rows(
                 slug,
                 table_anchor,
@@ -330,7 +346,7 @@ def build_selected_rows(
                     max_children_per_table,
                 )
             )
-    return selected_rows, audit_failures
+    return selected_rows, audit_failures, table_anchor_match_audits
 
 
 def load_threshold_sensitivity(path: Path) -> list[dict[str, Any]]:
@@ -348,7 +364,7 @@ def selected_child_count_for_cap(
     min_children_per_table: int,
     cap: int,
 ) -> int:
-    rows, _ = build_selected_rows(
+    rows, _, _ = build_selected_rows(
         manual,
         tree_dir,
         parent_score_threshold,
@@ -560,10 +576,26 @@ def render_markdown(document: dict[str, Any]) -> str:
 def write_outputs(
     rows: list[dict[str, Any]],
     audit_failures: list[dict[str, Any]],
+    table_anchor_match_audits: list[dict[str, Any]],
     output_dir: Path,
     policy: dict[str, Any],
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
+    anchor_audit_path = output_dir / "popo_table_anchor_match_audit.json"
+    anchor_audit_payload = {
+        "schema_version": "1.0",
+        "policy": TABLE_ANCHOR_MATCH_POLICY,
+        "threshold_basis": TABLE_ANCHOR_MATCH_THRESHOLD_BASIS,
+        "min_iou": TABLE_ANCHOR_MATCH_MIN_IOU,
+        "max_coord_delta": TABLE_ANCHOR_MATCH_MAX_COORD_DELTA,
+        "status": "fail" if audit_failures else "pass",
+        "documents": table_anchor_match_audits,
+        "audit_failures": audit_failures,
+    }
+    anchor_audit_path.write_text(
+        json.dumps(anchor_audit_payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     selected_path = output_dir / "popo_strict_selected_child_blocks.json"
     selected_path.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -609,7 +641,16 @@ def write_outputs(
         )
 
     summary_path = output_dir / "popo_strict_human_child_annotation_summary.md"
-    summary_path.write_text(render_summary(batch, documents, policy, audit_failures), encoding="utf-8")
+    summary_path.write_text(
+        render_summary(
+            batch,
+            documents,
+            policy,
+            audit_failures,
+            anchor_audit_path,
+        ),
+        encoding="utf-8",
+    )
 
     status = {
         "schema_version": "1.0",
@@ -622,6 +663,9 @@ def write_outputs(
         "counts_by_document": dict(sorted(counts_by_doc.items())),
         "counts_by_table": dict(sorted(counts_by_table.items())),
         "prefilter_policy": policy,
+        "audit_status": "fail" if audit_failures else "pass",
+        "table_anchor_match_audit": str(anchor_audit_path),
+        "table_anchor_match_policy": TABLE_ANCHOR_MATCH_POLICY,
         "audit_failures": audit_failures,
     }
     status_path = output_dir / "popo_strict_human_child_annotation_package_status.json"
@@ -634,6 +678,7 @@ def render_summary(
     documents: list[dict[str, Any]],
     policy: dict[str, Any],
     audit_failures: list[dict[str, Any]],
+    anchor_audit_path: Path,
 ) -> str:
     lines = [
         "# Popo Strict Human Child Annotation Summary",
@@ -646,6 +691,8 @@ def render_summary(
         f"- Child threshold: {policy['child_score_threshold']}",
         f"- Per-table child cap: {policy['max_children_per_table']}",
         f"- Per-table fallback minimum: {policy['min_children_per_table']}",
+        f"- Table-anchor audit: {anchor_audit_path}",
+        f"- Table-anchor audit status: {'fail' if audit_failures else 'pass'}",
         "",
         "## Documents",
         "",
@@ -694,7 +741,7 @@ def render_summary(
         for failure in audit_failures:
             lines.append(f"- {failure}")
     else:
-        lines.append("- No Popo table-count audit failures were reported.")
+        lines.append("- All Popo table anchors passed unique page/bbox matching.")
     return "\n".join(lines) + "\n"
 
 
@@ -733,6 +780,10 @@ def main() -> None:
         "child_score_threshold": args.child_score_threshold,
         "min_children_per_table": args.min_children_per_table,
         "max_children_per_table": args.max_children_per_table,
+        "table_anchor_match_policy": TABLE_ANCHOR_MATCH_POLICY,
+        "table_anchor_match_min_iou": TABLE_ANCHOR_MATCH_MIN_IOU,
+        "table_anchor_match_max_coord_delta": TABLE_ANCHOR_MATCH_MAX_COORD_DELTA,
+        "table_anchor_match_threshold_basis": TABLE_ANCHOR_MATCH_THRESHOLD_BASIS,
         "threshold_rationale": threshold_rationale,
         "rule": [
             "Use Popo text nodes as parent blocks.",
@@ -743,7 +794,7 @@ def main() -> None:
             "Exclude reference/bibliography/preface/acknowledgement-like parent nodes from this first annotation template.",
         ],
     }
-    rows, audit_failures = build_selected_rows(
+    rows, audit_failures, table_anchor_match_audits = build_selected_rows(
         manual,
         args.tree_dir,
         args.parent_score_threshold,
@@ -751,8 +802,16 @@ def main() -> None:
         args.min_children_per_table,
         args.max_children_per_table,
     )
-    status = write_outputs(rows, audit_failures, args.output_dir, policy)
+    status = write_outputs(
+        rows,
+        audit_failures,
+        table_anchor_match_audits,
+        args.output_dir,
+        policy,
+    )
     print(json.dumps(status, ensure_ascii=False, indent=2))
+    if audit_failures:
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":

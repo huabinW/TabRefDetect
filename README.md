@@ -218,5 +218,10 @@ review with a local classifier. It releases reusable code and sanitized
 configuration templates only; local runtime outputs and annotations are not
 included.
 
+> **Current limitation:** Human child-level gold annotations are still limited.
+> Candidate thresholds and generalization metrics should therefore be treated
+> as provisional until they are validated on a larger paper-grouped annotation
+> set.
+
 ---
 

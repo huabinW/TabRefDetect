@@ -100,7 +100,8 @@ the active candidate policy or support a Skill proposal.
 6. Switch to `learning_mode = propose` when lessons should update the Skill.
 7. Review the pending proposal manually.
 8. Approve or reject it with the CLI.
-9. Re-run tests and the five-paper regression.
+9. Re-run tests and the versioned regression corpus with the normal prompt blind
+   to previous decisions; keep user-confirmed holdout papers separate.
 
 This keeps automatic learning useful but boxed in: it can tune cheap candidate
 rules, while human approval remains the only path to changing the agent's

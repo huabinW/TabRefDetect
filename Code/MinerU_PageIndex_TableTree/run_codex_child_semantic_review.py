@@ -1,69 +1,70 @@
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 from build_table_text_tree_batch import DEFAULT_MANIFEST, load_json
-from prepare_codex_child_review_packages import DEFAULT_OUTPUT_DIR
 
 
 BASE = Path(__file__).resolve().parent
 STATUS_PATH = None
 MATERIALIZER = BASE / "materialize_codex_child_review_results.py"
+SKILL_NAME = "tabref-table-text-child-selector"
+PROMPT_REFERENCE = Path("references/subagent-review-prompt.md")
 
 
-def review_prompt(document):
-    package_path = Path(document["package_json"])
-    decision_path = Path(document["expected_decisions"])
-    return f"""Use the installed $tabref-table-text-child-selector skill.
+def candidate_skill_dirs(skill_dir=None):
+    if skill_dir is not None:
+        yield Path(skill_dir).expanduser().resolve()
 
-Perform the Codex semantic precision-review stage for exactly one paper.
+    configured = os.environ.get("TABREF_SELECTOR_SKILL_DIR")
+    if configured:
+        yield Path(configured).expanduser().resolve()
 
-Input package:
-{package_path}
+    if BASE.name == "scripts" and (BASE.parent / "SKILL.md").exists():
+        yield BASE.parent
 
-Write decisions to:
-{decision_path}
+    for ancestor in (BASE, *BASE.parents):
+        yield ancestor / "skill" / SKILL_NAME
 
-Read the complete package. Judge every review item from its table caption/body,
-complete parent paragraph, and exact child text. The code_recall_score is only a
-ranking aid and must not determine the decision.
+    yield Path.home() / ".codex" / "skills" / SKILL_NAME
 
-Use 0 for correct/relevant and 1 for incorrect/irrelevant. Retain table
-introductions, table-scoped experimental conditions, datasets, models, metrics,
-settings, comparisons, limitations, and result interpretations that can support
-later citation-reference judgment. Demote generic background, headings,
-transitions, redundancy, unrelated text, and insufficiently table-scoped text.
 
-Write valid UTF-8 JSON with this exact top-level shape:
-{{
-  "schema_version": "1.0",
-  "review_stage": "codex_semantic_precision_review",
-  "slug": "{document['slug']}",
-  "reviewer": "codex",
-  "decisions": [
-    {{
-      "review_key": "...",
-      "child_id": "...",
-      "child_text_sha256": "...",
-      "codex_label": 0,
-      "semantic_role": "table_introduction",
-      "citation_support": "direct",
-      "rationale": "..."
-    }}
-  ]
-}}
+def resolve_review_prompt_path(skill_dir=None):
+    checked = []
+    seen = set()
+    for candidate in candidate_skill_dirs(skill_dir):
+        candidate = candidate.resolve()
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        prompt_path = candidate / PROMPT_REFERENCE
+        checked.append(prompt_path)
+        if prompt_path.is_file():
+            return prompt_path
+    locations = "\n".join(f"- {path}" for path in checked)
+    raise FileNotFoundError(
+        f"Cannot locate {PROMPT_REFERENCE} for Skill {SKILL_NAME}. Checked:\n"
+        f"{locations}"
+    )
 
-Copy review_key, child_id, and child_text_sha256 exactly from the package.
-Allowed semantic_role values:
-table_introduction, experimental_condition, dataset, model, metric,
-training_setting, method, result_interpretation, comparison, limitation,
-other_support, irrelevant.
-Allowed citation_support values: direct, indirect, none.
-Every package item must have exactly one decision. Label 1 must use
-citation_support=none. Do not modify any other project file.
-"""
+
+def review_prompt(document, skill_dir=None):
+    prompt_path = resolve_review_prompt_path(skill_dir)
+    template = prompt_path.read_text(encoding="utf-8")
+    replacements = {
+        "{PACKAGE_JSON_OR_MD}": str(Path(document["package_json"])),
+        "{DECISION_JSON}": str(Path(document["expected_decisions"])),
+        "{SLUG}": str(document["slug"]),
+    }
+    for placeholder, value in replacements.items():
+        template = template.replace(placeholder, value)
+    unresolved = [key for key in replacements if key in template]
+    if unresolved:
+        raise ValueError(f"Unresolved review prompt placeholders: {unresolved}")
+    return template
 
 
 def main():
@@ -71,6 +72,11 @@ def main():
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--status", type=Path, default=STATUS_PATH)
     parser.add_argument("--codex-command", default="codex")
+    parser.add_argument(
+        "--skill-dir",
+        type=Path,
+        help="Path to the installed tabref-table-text-child-selector Skill.",
+    )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
@@ -101,7 +107,7 @@ def main():
             "--sandbox",
             "workspace-write",
             "--skip-git-repo-check",
-            review_prompt(document),
+            review_prompt(document, args.skill_dir),
         ]
         if args.dry_run:
             runs.append(

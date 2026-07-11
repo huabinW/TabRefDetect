@@ -49,7 +49,7 @@ page positions, so they must be treated as private experiment artifacts.
 | `prepare_codex_child_review_packages.py` | Package table, parent, and child evidence for Codex semantic review. |
 | `run_codex_child_semantic_review.py` | Launch one Codex precision-review task per document. |
 | `materialize_codex_child_review_results.py` | Validate and materialize final Codex labels. |
-| `popo_workflow_helpers.py` | Shared MinerU-Popo text/table scoring helpers. |
+| `popo_workflow_helpers.py` | Shared MinerU-Popo table-anchor matching and text scoring helpers. |
 | `prepare_popo_strict_human_child_annotation_packages.py` | Build a Popo strict high-recall child-candidate annotation pool. |
 | `prepare_popo_codex_precision_review_packages.py` | Package Popo strict candidates for Codex semantic precision review. |
 | `run_popo_codex_precision_review.py` | Launch or dry-run one Codex review per Popo package. |
@@ -183,8 +183,10 @@ python run_popo_codex_precision_review.py --dry-run
 python materialize_popo_codex_precision_review_results.py
 ```
 
-The normal review path is one package per Codex agent with the standard prompt
-from `skill/tabref-table-text-child-selector/references/five-agent-review-prompt.md`.
+The coordinator keeps one decision file per independent package and chooses the
+number of Codex subagents from current concurrency and resource limits. The
+standard prompt lives at
+`skill/tabref-table-text-child-selector/references/subagent-review-prompt.md`.
 The materializer writes a compact `*.slim.json` template for human annotation
 and separate full-audit JSON files for traceability. Captions are preserved as
 table-anchor fields and are not reviewed as child candidates.

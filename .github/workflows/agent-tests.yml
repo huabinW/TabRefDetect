@@ -1,13 +1,17 @@
-name: Agent tests
+name: Agent and table-context tests
 
 on:
   push:
     paths:
       - "agent/tabref_context_agent/**"
+      - "Code/MinerU_PageIndex_TableTree/**"
+      - "skill/tabref-table-text-child-selector/**"
       - ".github/workflows/agent-tests.yml"
   pull_request:
     paths:
       - "agent/tabref_context_agent/**"
+      - "Code/MinerU_PageIndex_TableTree/**"
+      - "skill/tabref-table-text-child-selector/**"
       - ".github/workflows/agent-tests.yml"
 
 jobs:
@@ -32,3 +36,7 @@ jobs:
       - name: Run agent tests
         working-directory: agent/tabref_context_agent
         run: python -m pytest -q
+
+      - name: Run table-anchor matching tests
+        working-directory: Code/MinerU_PageIndex_TableTree
+        run: python -m pytest tests/test_table_anchor_matching.py -q

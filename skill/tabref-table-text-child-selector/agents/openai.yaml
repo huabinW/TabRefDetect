@@ -1,4 +1,4 @@
 interface:
   display_name: "TabRef Table Text Child Selector"
-  short_description: "Find supplementary table-context child blocks"
-  default_prompt: "Use $tabref-table-text-child-selector to preserve the complete code-stage recall pool, then retain only supplementary context not visible in the table and keep Codex predictions separate from human gold."
+  short_description: "Select table-scoped supplementary evidence"
+  default_prompt: "Use $tabref-table-text-child-selector to preserve the complete code-stage recall pool, coordinate independent review packages with a dynamic number of subagents, and retain only hidden table-scoped evidence needed for interpretation, reproduction, verification, or comparability."

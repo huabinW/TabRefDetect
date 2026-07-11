@@ -5,7 +5,7 @@ description: Select and audit the smallest body-text child blocks that describe 
 
 # TabRef Table Text Child Selector
 
-Current version: `0.5.1`.
+Current version: `0.6.1`.
 
 Find the minimal body-text spans that describe a table while preserving their complete parent paragraphs and original MinerU traceability.
 
@@ -37,11 +37,23 @@ Do not:
 4. Preserve every child under a correct parent so the code stage maximizes recall.
 5. For strict Popo review sets, send the complete high-recall set to Codex. Do not apply a code precision filter before semantic review.
 6. Run `scripts/prepare_codex_child_review_packages.py`.
-7. Run a five-agent review when several papers can be reviewed independently:
-   assign one package to one Codex agent and use `references/five-agent-review-prompt.md`.
-8. Run `scripts/run_codex_child_semantic_review.py`, or read each package in the current Codex session and write its decisions.
-9. Run `scripts/materialize_codex_child_review_results.py` to validate completeness and produce final outputs.
-10. Report preserved code-stage candidates, semantic-review candidates, Codex final labels, and human gold separately.
+7. Partition independent papers or shards into review packages. Let the current
+   conversation coordinate the run and assign packages to subagents with
+   `references/subagent-review-prompt.md`.
+8. Choose the subagent count from the number of independent packages, available
+   concurrency, token budget, and retry state. Do not assume a fixed count. Use
+   one subagent per package when practical, or queue several packages through
+   fewer subagents while keeping one decision file per package.
+9. Keep a coordinator manifest of expected packages, assigned decision paths,
+   completion state, and validation failures. On resume, review only missing or
+   invalid packages.
+10. Run `scripts/run_codex_child_semantic_review.py`, or let each assigned
+    subagent write exactly one package decision file.
+11. Run `scripts/materialize_codex_child_review_results.py` only after every
+    expected decision file passes identity, hash, schema, and completeness
+    validation.
+12. Report preserved code-stage candidates, semantic-review candidates, Codex
+    final labels, adjudicated regression labels, and human gold separately.
 
 Default project command:
 
@@ -84,21 +96,49 @@ per-table coverage. Keep all original child evidence in the full dataset.
 
 Judge each high-recall candidate from the table caption/body, complete parent paragraph, and exact child text.
 
-Assign `0` when the child:
+Apply all four tests in order:
 
-- Supplies information not already visible in the table that is required to
-  interpret, reproduce, or verify it.
-- Gives table-scoped datasets, splits, prompts, shots, metrics, evaluation
-  protocols, baseline definitions, configurations, training settings, or
-  experimental constraints.
-- Gives a necessary limitation, metric behavior, dataset difference, or
-  cross-study comparability qualification that cannot be read directly from
-  the table.
+1. **Table scope:** Identify the specific current-table field, row, column,
+   method, dataset, metric, protocol, comparison, or limitation governed by the
+   child. An explicit table mention is neither necessary nor sufficient.
+   Nearby text is not automatically table-scoped. A shared configuration may
+   support several tables only when it actually governs each table.
+2. **Information gain:** Check whether the same fact is already visible in the
+   table or caption, or follows from a simple lookup, comparison, or arithmetic
+   calculation over visible cells. If so, the child adds no supplementary
+   information.
+3. **Evidence utility:** Apply the counterfactual removal test: if the child were
+   removed, would a careful reader lose a hidden fact needed to define table
+   semantics, reproduce the setup, verify provenance, or assess limitations and
+   comparability?
+4. **Minimal sufficiency:** Keep the smallest complete candidate that carries
+   the useful fact. Do not rewrite or truncate OCR evidence. When a candidate
+   mixes a result restatement with an inseparable supplementary clause, retain
+   it only if that clause independently passes the first three tests and name
+   the clause-level contribution in the rationale.
+
+Assign `0` when the child passes the table-scope, information-gain, and
+evidence-utility tests. Common transferable evidence functions include:
+
+- Defining a row, column, baseline, feature, model variant, abbreviation, or
+  configuration whose meaning is not expanded in the table.
+- Giving data provenance, composition, split, sampling, filtering, annotation,
+  availability, domain, coverage, or difficulty conditions.
+- Giving table-governing prompts, shots, decoding or inference parameters,
+  training settings, evaluation protocols, metric definitions, or judge
+  criteria.
+- Giving a necessary limitation, metric behavior, dataset difference, or
+  cross-study comparability qualification that changes how visible values
+  should be interpreted.
+- Linking a derived table entry to its source text, resource, or construction
+  procedure when that trace is required to verify or reproduce the table.
 
 Assign `1` when the child:
 
 - Only says the table shows, reports, summarizes, lists, or compares content
   already visible in the table.
+- Rephrases or aggregates visible values, or states a conclusion obtainable by
+  a simple comparison, count, percentage, or arithmetic calculation.
 - Describes a model innovation, method background, implementation detail, or
   general performance claim that is related to the topic but outside the
   table's intended content.
@@ -108,8 +148,9 @@ Assign `1` when the child:
   visible in the table.
 - Uses the table to make a promotional efficacy, capability, or generalizability
   claim without adding separate table-scoped conditions.
-- Is generic background, a transition, a heading fragment, redundant,
-  unrelated, or insufficiently table-scoped.
+- Is a cross-table pointer without a new current-table fact, generic background,
+  a transition, a heading fragment, unrelated, insufficiently table-scoped, or
+  a weaker repetition that adds no fact beyond a more direct candidate.
 
 Use the supplementary-context test:
 
@@ -123,17 +164,20 @@ every child relevant. A table may legitimately retain zero child spans.
 
 Being supported by the table is not sufficient for label `0`. A result
 interpretation is retained only when it contributes a necessary limitation,
-metric behavior, dataset difference, or cross-study qualification beyond the
-visible values.
+metric behavior, dataset difference, protocol condition, or cross-study
+qualification beyond the visible values. Do not use section distance, lexical
+overlap, an explicit table reference, or a high code score as a semantic veto
+or automatic acceptance rule.
 
 Existing human labels are binding gold constraints during review. Codex must
 copy them exactly and use their rationales as feedback. Code scores and lexical
 overlap are ranking aids only.
 
-Do not hard-code historical retained counts, paper-specific outcomes, or
-previous decision files into a normal review prompt. A standard review prompt
-should name only the current package, output path, and schema contract. Previous
-decisions are inputs only in an explicit comparison or audit mode.
+Do not hard-code historical retained counts, paper-specific outcomes, benchmark
+paper names, table ids, example wording, or previous decision files into a
+normal review prompt. A standard review prompt should name only the current
+package, output path, slug, and schema contract. Previous decisions are inputs
+only in an explicit comparison or audit mode.
 
 Record `semantic_role`, `citation_support`, and a concise rationale. The code may validate and materialize these fields, but it must not invent them.
 
@@ -173,16 +217,32 @@ candidate_policy_version = candidate-policy-...
 Mark final model decisions:
 
 ```text
-final_child_label_source = codex_skill_0_5_x_supplementary_review
+final_child_label_source = codex_skill_0_6_x_supplementary_review
 ```
 
 Never present code candidates or Codex decisions as human gold labels.
 
-The recommended repeatable path starts one Codex review per paper/package and
-materializes results only after every expected decision file exists and passes
-validation. When token budget is constrained, stop after package preparation,
-review only missing packages, and resume by checking missing decision files
-instead of re-reading already completed outputs.
+The recommended repeatable path assigns each independent package to exactly one
+decision file and materializes results only after every expected file exists and
+passes validation. The coordinator may use any positive number of subagents and
+must record package ownership. When token budget is constrained, stop after
+package preparation, review only missing packages, and resume from the
+coordinator manifest instead of re-reading completed outputs.
+
+## Generalization Guardrails
+
+- Use adjudicated Codex disagreements as a regression corpus, not as human gold
+  or automatic threshold-training data.
+- Derive rules from recurring evidence functions and failure modes across
+  papers. Do not add a rule solely to flip an individual historical candidate.
+- Keep normal review blind to prior labels, expected retained counts, and
+  paper-specific conclusions.
+- Evaluate revisions by evidence-family consistency, false acceptance of
+  visible restatements, false rejection of hidden settings/definitions, package
+  completeness, and table coverage. Do not optimize only for aggregate agreement
+  on the same development papers.
+- Require user-confirmed child labels before calibrating code thresholds or
+  promoting regression decisions to gold.
 
 ## Table Captions
 
@@ -244,7 +304,9 @@ When the user supplies child-level annotations:
 4. Optimize candidate-policy weights and thresholds only if guardrails pass.
 5. Stage any Skill wording change in `learning/skill_proposals/pending`.
 6. Modify the live Skill only after explicit approval.
-7. Re-run the existing five-paper regression set.
+7. Re-run a versioned regression corpus of independent packages with the normal
+   prompt blind to previous decisions. Keep a separate holdout once sufficient
+   user-confirmed labels exist.
 8. Increment the version in both this file and `references/version.json`.
 
 Use semantic versioning:

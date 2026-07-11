@@ -106,11 +106,12 @@ def documents_needing_codex_review(
     ]
 
 
-def load_review_prompt(workspace_root: Path):
+def load_review_prompt(workspace_root: Path, skill_dir: Path | None = None):
     module_path = workspace_root / "run_codex_child_semantic_review.py"
     module_name = "_tabref_project_codex_review"
     if module_name in sys.modules:
-        return sys.modules[module_name].review_prompt
+        module = sys.modules[module_name]
+        return lambda document: module.review_prompt(document, skill_dir)
     if str(workspace_root) not in sys.path:
         sys.path.insert(0, str(workspace_root))
     spec = importlib.util.spec_from_file_location(module_name, module_path)
@@ -119,7 +120,7 @@ def load_review_prompt(workspace_root: Path):
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
-    return module.review_prompt
+    return lambda document: module.review_prompt(document, skill_dir)
 
 
 def decide_review_action(
@@ -407,7 +408,10 @@ class AgentNodes:
         document = state["review_document"]
         slug = document["slug"]
         if self.review_prompt is None:
-            self.review_prompt = load_review_prompt(self.config.workspace_root)
+            self.review_prompt = load_review_prompt(
+                self.config.workspace_root,
+                self.config.resolved_selector_skill_dir,
+            )
         command = [
             self.config.codex_command,
             "exec",

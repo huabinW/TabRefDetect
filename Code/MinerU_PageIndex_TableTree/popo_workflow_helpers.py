@@ -50,6 +50,16 @@ DEFAULT_STRICT_STATUS = (
 DEFAULT_TREE_DIR = DEFAULT_BASE / "popo_build_tree"
 DEFAULT_OUTPUT_DIR = DEFAULT_BASE / "popo_workflow_full_comparison"
 
+TABLE_ANCHOR_MATCH_POLICY = "exact_page_bbox_unique_bipartite_v1"
+TABLE_ANCHOR_MATCH_MIN_IOU = 0.70
+TABLE_ANCHOR_MATCH_MAX_COORD_DELTA = 0.03
+MINERU_BBOX_SCALE = 1000.0
+
+TABLE_ANCHOR_MATCH_THRESHOLD_BASIS = (
+    "provisional conservative geometry guardrail for normalized MinerU/Popo "
+    "table boxes; validate with additional human-verified anchors"
+)
+
 
 FAMILY_REGEXES = {
     "dataset": DATASET_RE,
@@ -174,6 +184,253 @@ def manual_documents(manual: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 def table_anchor_by_order(document: dict[str, Any]) -> list[dict[str, Any]]:
     return [table["table_anchor"] for table in document.get("tables", [])]
+
+
+def normalize_match_bbox(bbox: Any) -> list[float] | None:
+    if not isinstance(bbox, (list, tuple)) or len(bbox) != 4:
+        return None
+    try:
+        values = [float(value) for value in bbox]
+    except (TypeError, ValueError):
+        return None
+    if max(abs(value) for value in values) > 1.5:
+        values = [value / MINERU_BBOX_SCALE for value in values]
+    if values[2] <= values[0] or values[3] <= values[1]:
+        return None
+    return values
+
+
+def bbox_iou(left: list[float], right: list[float]) -> float:
+    x0 = max(left[0], right[0])
+    y0 = max(left[1], right[1])
+    x1 = min(left[2], right[2])
+    y1 = min(left[3], right[3])
+    intersection = max(0.0, x1 - x0) * max(0.0, y1 - y0)
+    left_area = (left[2] - left[0]) * (left[3] - left[1])
+    right_area = (right[2] - right[0]) * (right[3] - right[1])
+    union = left_area + right_area - intersection
+    return intersection / union if union > 0 else 0.0
+
+
+def table_anchor_pair_audit(
+    anchor_index: int,
+    anchor: dict[str, Any],
+    node_index: int,
+    table_node: dict[str, Any],
+    min_iou: float,
+    max_coord_delta: float,
+) -> dict[str, Any]:
+    anchor_bbox = normalize_match_bbox(anchor.get("bbox"))
+    anchor_page = anchor.get("page_index")
+    try:
+        anchor_page = int(anchor_page) if anchor_page is not None else None
+    except (TypeError, ValueError):
+        anchor_page = None
+
+    same_page_locations = []
+    for location in table_node.get("location") or []:
+        if not isinstance(location, dict):
+            continue
+        try:
+            page = int(location.get("page"))
+        except (TypeError, ValueError):
+            continue
+        location_bbox = normalize_match_bbox(location.get("bbox"))
+        if page == anchor_page and location_bbox is not None:
+            same_page_locations.append((page, location_bbox))
+
+    result = {
+        "anchor_index": anchor_index,
+        "canonical_label": anchor.get("canonical_label"),
+        "anchor_page": anchor_page,
+        "anchor_bbox_normalized": anchor_bbox,
+        "popo_table_index": node_index,
+        "popo_node_id": table_node.get("node_id"),
+        "popo_pages": table_node.get("page_indices") or [],
+        "eligible": False,
+        "reason": None,
+        "bbox_iou": None,
+        "max_coord_delta": None,
+        "popo_bbox_normalized": None,
+    }
+    if anchor_page is None or anchor_bbox is None:
+        result["reason"] = "invalid_anchor_page_or_bbox"
+        return result
+    if not same_page_locations:
+        result["reason"] = "no_same_page_popo_location"
+        return result
+
+    geometry = []
+    for _, location_bbox in same_page_locations:
+        geometry.append(
+            (
+                bbox_iou(anchor_bbox, location_bbox),
+                max(
+                    abs(left - right)
+                    for left, right in zip(anchor_bbox, location_bbox)
+                ),
+                location_bbox,
+            )
+        )
+    best_iou, best_delta, best_bbox = max(
+        geometry, key=lambda item: (item[0], -item[1])
+    )
+    result.update(
+        {
+            "bbox_iou": round(best_iou, 6),
+            "max_coord_delta": round(best_delta, 6),
+            "popo_bbox_normalized": best_bbox,
+        }
+    )
+    if best_iou < min_iou:
+        result["reason"] = "bbox_iou_below_guardrail"
+        return result
+    if best_delta > max_coord_delta:
+        result["reason"] = "bbox_delta_above_guardrail"
+        return result
+    result["eligible"] = True
+    result["reason"] = "exact_page_and_bbox_guardrails_passed"
+    return result
+
+
+def _complete_table_matchings(
+    eligible_by_anchor: dict[int, list[int]],
+    anchor_count: int,
+) -> list[dict[int, int]]:
+    solutions: list[dict[int, int]] = []
+
+    def visit(assignments: dict[int, int], used_nodes: set[int]) -> None:
+        if len(solutions) >= 2:
+            return
+        if len(assignments) == anchor_count:
+            solutions.append(dict(assignments))
+            return
+        remaining = [index for index in range(anchor_count) if index not in assignments]
+        anchor_index = min(
+            remaining,
+            key=lambda index: len(
+                [node for node in eligible_by_anchor[index] if node not in used_nodes]
+            ),
+        )
+        candidates = [
+            node
+            for node in eligible_by_anchor[anchor_index]
+            if node not in used_nodes
+        ]
+        for node_index in candidates:
+            assignments[anchor_index] = node_index
+            used_nodes.add(node_index)
+            visit(assignments, used_nodes)
+            used_nodes.remove(node_index)
+            del assignments[anchor_index]
+
+    visit({}, set())
+    return solutions
+
+
+def match_table_anchors(
+    anchors: list[dict[str, Any]],
+    table_nodes: list[dict[str, Any]],
+    min_iou: float = TABLE_ANCHOR_MATCH_MIN_IOU,
+    max_coord_delta: float = TABLE_ANCHOR_MATCH_MAX_COORD_DELTA,
+) -> dict[str, Any]:
+    audit: dict[str, Any] = {
+        "schema_version": "1.0",
+        "policy": TABLE_ANCHOR_MATCH_POLICY,
+        "threshold_basis": TABLE_ANCHOR_MATCH_THRESHOLD_BASIS,
+        "min_iou": min_iou,
+        "max_coord_delta": max_coord_delta,
+        "manual_table_count": len(anchors),
+        "popo_table_count": len(table_nodes),
+        "status": "fail",
+        "failures": [],
+        "pair_audit": [],
+        "matches": [],
+    }
+    if len(anchors) != len(table_nodes):
+        audit["failures"].append(
+            {
+                "reason": "table_count_mismatch",
+                "manual_table_count": len(anchors),
+                "popo_table_count": len(table_nodes),
+            }
+        )
+        return audit
+    if not anchors:
+        audit["status"] = "pass"
+        return audit
+
+    labels = [anchor.get("canonical_label") for anchor in anchors]
+    duplicate_labels = sorted(
+        {label for label in labels if label and labels.count(label) > 1}
+    )
+    if duplicate_labels:
+        audit["failures"].append(
+            {"reason": "duplicate_canonical_labels", "labels": duplicate_labels}
+        )
+        return audit
+
+    eligible_by_anchor = {index: [] for index in range(len(anchors))}
+    pair_lookup = {}
+    for anchor_index, anchor in enumerate(anchors):
+        for node_index, table_node in enumerate(table_nodes):
+            pair = table_anchor_pair_audit(
+                anchor_index,
+                anchor,
+                node_index,
+                table_node,
+                min_iou,
+                max_coord_delta,
+            )
+            audit["pair_audit"].append(pair)
+            pair_lookup[(anchor_index, node_index)] = pair
+            if pair["eligible"]:
+                eligible_by_anchor[anchor_index].append(node_index)
+
+    for anchor_index, candidates in eligible_by_anchor.items():
+        if not candidates:
+            audit["failures"].append(
+                {
+                    "reason": "anchor_has_no_eligible_popo_table",
+                    "anchor_index": anchor_index,
+                    "canonical_label": anchors[anchor_index].get(
+                        "canonical_label"
+                    ),
+                }
+            )
+    if audit["failures"]:
+        return audit
+
+    solutions = _complete_table_matchings(eligible_by_anchor, len(anchors))
+    if not solutions:
+        audit["failures"].append(
+            {"reason": "no_complete_one_to_one_matching"}
+        )
+        return audit
+    if len(solutions) > 1:
+        audit["failures"].append(
+            {"reason": "ambiguous_multiple_complete_matchings"}
+        )
+        return audit
+
+    for anchor_index, node_index in sorted(solutions[0].items()):
+        pair = pair_lookup[(anchor_index, node_index)]
+        audit["matches"].append(
+            {
+                "anchor_index": anchor_index,
+                "canonical_label": anchors[anchor_index].get("canonical_label"),
+                "popo_table_index": node_index,
+                "popo_node_id": table_nodes[node_index].get("node_id"),
+                "page": pair["anchor_page"],
+                "bbox_iou": pair["bbox_iou"],
+                "max_coord_delta": pair["max_coord_delta"],
+                "anchor_bbox_normalized": pair["anchor_bbox_normalized"],
+                "popo_bbox_normalized": pair["popo_bbox_normalized"],
+                "assignment_reason": TABLE_ANCHOR_MATCH_POLICY,
+            }
+        )
+    audit["status"] = "pass"
+    return audit
 
 
 def candidate_signals(table_anchor: dict[str, Any], popo_table: dict[str, Any], text_node: dict[str, Any]) -> dict[str, Any]:
@@ -332,6 +589,7 @@ def build_popo_candidate_dataset(
     output_docs = []
     coverage_rows = []
     audit_failures = []
+    table_anchor_match_audits = []
     for slug, document in documents_by_slug.items():
         tree_path = tree_dir / f"{slug}.json"
         if not tree_path.exists():
@@ -340,23 +598,25 @@ def build_popo_candidate_dataset(
         tree = load_json(tree_path)
         text_nodes, table_nodes = extract_popo_nodes(tree, slug)
         anchors = table_anchor_by_order(document)
-        if len(anchors) != len(table_nodes):
+        anchor_match_audit = match_table_anchors(anchors, table_nodes)
+        table_anchor_match_audits.append({"slug": slug, **anchor_match_audit})
+        if anchor_match_audit["status"] != "pass":
             audit_failures.append(
                 {
                     "slug": slug,
-                    "reason": "table_count_mismatch",
-                    "old_tables": len(anchors),
-                    "popo_tables": len(table_nodes),
+                    "reason": "table_anchor_match_failed",
+                    "details": anchor_match_audit["failures"],
                 }
             )
+            continue
         table_items = []
         evidence_count = 0
         covered_count = 0
         weak_count = 0
-        for table_index, table_anchor in enumerate(anchors):
-            if table_index >= len(table_nodes):
-                continue
-            popo_table = table_nodes[table_index]
+        for anchor_match in anchor_match_audit["matches"]:
+            table_index = anchor_match["anchor_index"]
+            table_anchor = anchors[table_index]
+            popo_table = table_nodes[anchor_match["popo_table_index"]]
             candidates = []
             projected_selected_children = []
             selected_parent_count = 0
@@ -445,6 +705,7 @@ def build_popo_candidate_dataset(
                         "block_ids": popo_table.get("block_ids"),
                         "page_indices": popo_table.get("page_indices"),
                         "ancestor_titles": popo_table.get("ancestor_titles"),
+                        "anchor_match": anchor_match,
                     },
                     "candidate_count": len(candidates),
                     "selected_parent_count": selected_parent_count,
@@ -474,11 +735,17 @@ def build_popo_candidate_dataset(
         "policy": {
             "parent_score_threshold": parent_score_threshold,
             "child_score_threshold": child_score_threshold,
-            "table_mapping": "old table anchors mapped to Popo table nodes by document-order block id",
+            "table_mapping": (
+                "manual table anchors mapped to Popo table nodes by a unique "
+                "exact-page/bbox one-to-one assignment; order is not a match signal"
+            ),
+            "table_mapping_policy": TABLE_ANCHOR_MATCH_POLICY,
+            "table_mapping_threshold_basis": TABLE_ANCHOR_MATCH_THRESHOLD_BASIS,
             "manual_evidence_coverage": "exact substring or lexical-token containment >= 0.65 is covered; >= 0.45 is weak_match",
         },
         "documents": output_docs,
         "manual_evidence_coverage_rows": coverage_rows,
+        "table_anchor_match_audits": table_anchor_match_audits,
         "audit_failures": audit_failures,
     }
 
@@ -731,6 +998,8 @@ def main() -> None:
             indent=2,
         )
     )
+    if dataset["audit_failures"]:
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":

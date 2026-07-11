@@ -26,7 +26,8 @@ high-recall rules
 
 ### 1. Human Gold and Evaluation
 
-Import the user's five-paper child annotations and calculate label-0 precision,
+Import user-confirmed child annotations with paper-grouped development and
+holdout splits, then calculate label-0 precision,
 recall, F1, per-table evidence recall, and error categories. Add grouped
 paper-level splits and regression gates.
 
