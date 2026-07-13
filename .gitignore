@@ -43,3 +43,7 @@ ocr_glm46vflash_*_prompts.json
 ocr_glm46vflash_*_prompts.jsonl
 ocr_glm46vflash_*_model_results.json
 ocr_glm46vflash_*_model_results.jsonl
+
+# Local table-context manifests and generated review artifacts
+Code/MinerU_PageIndex_TableTree/table_context_pipeline/config/*.local.json
+Code/MinerU_PageIndex_TableTree/outputs/

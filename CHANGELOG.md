@@ -4,8 +4,15 @@ All notable public-facing changes to this repository are summarized here.
 
 ## Unreleased
 
-- Continue improving the MinerU + MinerU-Popo table-context workflow.
-- Calibrate table-context candidate thresholds after human child-level annotations are available.
+- Added the scope-aware MinerU + MinerU-Popo v2 table-context workflow.
+- Added fail-closed one-to-one table-anchor matching and MinerU fallback evidence.
+- Removed parent/child thresholds and per-table caps from the active pre-review
+  candidate stage; scores now provide ordering metadata only.
+- Added independent per-paper review packages, a standard fresh-run prompt,
+  full-audit materialization, compact human templates, and anonymous config schemas.
+- Kept the earlier threshold workflow as a historical compatibility path.
+- Defer stable threshold or local-model calibration until enough human
+  child-level annotations are available.
 - Prepare local classifier or reranker replacements for Codex semantic review.
 
 ## 2026-06-17

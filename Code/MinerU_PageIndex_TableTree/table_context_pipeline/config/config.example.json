@@ -1,0 +1,20 @@
+{
+  "schema_version": "2.0",
+  "name": "example_mineru_popo_run",
+  "sources": [
+    {
+      "name": "example_source",
+      "anchor_manifest": "table_context_pipeline/config/anchor_manifest.local.json",
+      "popo_tree_dir": "inputs/popo_trees"
+    }
+  ],
+  "anchor_overrides": "table_context_pipeline/config/anchor_overrides.local.json",
+  "output_dir": "outputs/table_context_pipeline_v2/example_run",
+  "policy": {
+    "source_inventory": "popo_text_plus_mineru_orphan_fallback",
+    "references": "outline_only",
+    "score_role": "ordering_only",
+    "pre_codex_cap": null,
+    "review_unit": "unique_child_with_all_paper_tables"
+  }
+}

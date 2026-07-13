@@ -21,6 +21,9 @@ TabRefDetect is an automated framework designed to detect whether a citing paper
   active memory pack into each run.
 - **Hybrid review design**: separates deterministic high-recall candidate
   generation from Codex or future local-model semantic precision review.
+- **Scope-aware evidence inventory**: stores each child once, preserves its
+  complete parent and exact offsets, and supports shared conditions that apply
+  to multiple tables without pre-review truncation.
 - **Model-ready outputs**: preserves table anchors, full parent paragraphs,
   child spans, hashes, page metadata, and labels for downstream classifier
   training.
@@ -114,9 +117,21 @@ each candidate child block. It uses `0 = correct/relevant` and
 `1 = incorrect/irrelevant`. Codex decisions remain provisional silver labels
 until they are compared with human annotations.
 
-The current Popo review path uses a standard one-package-per-agent prompt,
-keeps captions as table-anchor fields rather than child candidates, and writes
-both compact human-annotation templates and full-audit outputs for traceability.
+The active scope-aware v2 path first requires a unique one-to-one page/bbox
+match between MinerU table anchors and Popo table nodes. It merges Popo text
+parents with uncovered MinerU text, list, and footnote evidence, stores each
+child once, and exposes every table in the paper to semantic review. Scores and
+scope suggestions are ordering aids only; they do not delete candidates.
+
+Fresh review uses a standard independent package prompt without historical
+labels or expected result counts. Captions remain table-anchor fields rather
+than child candidates. The materializer writes compact human-annotation
+templates and separate full-audit outputs for traceability. The legacy
+threshold-and-cap scripts remain available for reproduction but are no longer
+the default for new runs.
+
+The v2 implementation and anonymous configuration schemas are available at
+[`Code/MinerU_PageIndex_TableTree/table_context_pipeline/v2/`](Code/MinerU_PageIndex_TableTree/table_context_pipeline/v2).
 
 Reusable Codex workflows are released in [`skill/`](skill/):
 

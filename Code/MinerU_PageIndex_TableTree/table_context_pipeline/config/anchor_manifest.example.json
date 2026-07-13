@@ -1,0 +1,23 @@
+{
+  "schema_version": "2.0",
+  "documents": [
+    {
+      "slug": "example_paper",
+      "mineru_source": "inputs/mineru/example_paper_content_list.json",
+      "tables": [
+        {
+          "table_anchor": {
+            "table_node_id": "table-1",
+            "canonical_label": "Table 1",
+            "caption": "Example table caption",
+            "page_index": 0,
+            "bbox": [100, 200, 900, 700],
+            "order_key": [0, 10],
+            "raw_content_index": 10,
+            "table_html": "<table><tr><td>Example</td></tr></table>"
+          }
+        }
+      ]
+    }
+  ]
+}

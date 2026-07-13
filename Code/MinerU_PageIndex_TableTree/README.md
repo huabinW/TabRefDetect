@@ -55,6 +55,7 @@ page positions, so they must be treated as private experiment artifacts.
 | `run_popo_codex_precision_review.py` | Launch or dry-run one Codex review per Popo package. |
 | `materialize_popo_codex_precision_review_results.py` | Validate Popo Codex decisions and write slim annotation plus full-audit outputs. |
 | `run_local_table_text_training_pipeline.py` | Run the deterministic preparation stages in sequence. |
+| `table_context_pipeline/v2/` | Active scope-aware MinerU + Popo candidate, review-package, and materialization workflow. |
 
 ## Configuration
 
@@ -127,6 +128,41 @@ been explicitly approved for upload.
 
 ## Table-description child selection
 
+### Active scope-aware v2 workflow
+
+The active workflow is [`table_context_pipeline/v2/`](table_context_pipeline/v2).
+It replaces pre-review threshold deletion with a complete unique-child inventory:
+
+1. Match audited MinerU table anchors to Popo table nodes using a fail-closed,
+   one-to-one page/bbox assignment.
+2. Merge Popo text parents with uncovered MinerU text, list, and footnote blocks.
+3. Preserve every unique child span, its complete parent, exact offsets, source
+   metadata, and every review-eligible table in the paper.
+4. Use scores and table suggestions only to order semantic review.
+5. Materialize compact human annotation templates separately from full audit
+   outputs.
+
+Start with the anonymous files under `table_context_pipeline/config/`:
+
+```powershell
+Copy-Item table_context_pipeline\config\config.example.json `
+  table_context_pipeline\config\config.local.json
+Copy-Item table_context_pipeline\config\anchor_manifest.example.json `
+  table_context_pipeline\config\anchor_manifest.local.json
+Copy-Item table_context_pipeline\config\anchor_overrides.example.json `
+  table_context_pipeline\config\anchor_overrides.local.json
+
+python table_context_pipeline\v2\build_scope_candidate_inventory.py `
+  --config table_context_pipeline\config\config.local.json
+```
+
+Then prepare one independent review package per paper and use
+`table_context_pipeline/v2/STANDARD_SCOPE_REVIEW_PROMPT.md` for fresh semantic
+review. Historical decisions are allowed only in a separate regression audit.
+
+The scripts described below are retained for historical reproduction and
+compatibility with older experiments.
+
 The table-description workflow separates recall and precision:
 
 1. MinerU OCR is attached as full, untruncated parent paragraphs.
@@ -171,10 +207,10 @@ python run_codex_child_semantic_review.py --manifest manifest.json
 python materialize_codex_child_review_results.py --manifest manifest.json
 ```
 
-### MinerU-Popo strict workflow
+### Legacy MinerU-Popo threshold workflow
 
-For the MinerU-Popo branch, use Popo `type=text` nodes as candidate parents and
-keep the code stage recall-oriented:
+This earlier workflow uses Popo `type=text` nodes and configurable thresholds.
+It is no longer the default for new annotation runs:
 
 ```powershell
 python prepare_popo_strict_human_child_annotation_packages.py

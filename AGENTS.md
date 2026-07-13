@@ -34,18 +34,30 @@ For this project, tables must never be treated as isolated artifacts. A useful r
 The table caption/label stage is an automatic anchoring stage, not the main human annotation task.
 
 - Caption resolution should determine a stable table anchor: canonical table number, title, page, bbox, MinerU content index, and Popo table node.
+- Match MinerU/manual table anchors to Popo table nodes with a unique one-to-one
+  page/bbox assignment. Never use list order as the deciding match signal. If
+  table counts differ, geometry is weak, or more than one complete assignment
+  exists, fail the document's anchor audit and do not generate its candidates.
 - Debug flags from caption resolution indicate parser edge cases, such as shared caption blocks or recovered captions. They should not automatically become routine human-labeling tasks.
-- Supplementary-evidence candidate recall is active for the Popo workflow. Use Popo text nodes as parent candidates and sentence-like child spans as annotation/model candidates.
+- Supplementary-evidence candidate recall is active in
+  `Code/MinerU_PageIndex_TableTree/table_context_pipeline/v2`. Use Popo text
+  nodes as primary parents and retain uncovered MinerU `text`, `list`, and
+  `page_footnote` blocks as fallback parents.
 
 ## Important Constraints
 
 - Do not discard non-table text when building intermediate outputs. The surrounding prose is essential for identifying datasets, models, metrics, and experimental conditions.
 - When merging MinerU and Popo results, attach table leaves to the best matching Popo table/text node, but keep the assignment auditable with page number, bbox, caption, Popo block ids, and assignment reason.
 - Popo parent nodes may be coarser than OCR paragraphs. Always preserve the complete parent text and record child span offsets.
-- Any threshold used for parent selection, child selection, per-table caps, or fallback floors must have an explicit basis. Record whether the basis is threshold-sensitivity calibration, human-label validation, annotation-budget control, or a temporary coverage guardrail.
-- Current Popo strict human template defaults are based on the five-paper development audit: parent threshold `120`, child threshold `60`, per-table cap `11`, and per-table fallback minimum `3`. The `120/60` pair comes from the Popo threshold sensitivity grid; cap `11` is chosen to keep the first human review set close to roughly 300 child candidates; minimum `3` is a coverage guardrail, not a learned value.
-- Treat these threshold justifications as provisional until human child-level annotations are available. After annotation, rerun threshold calibration with gold labels and report at least label-`0` recall/precision/F1, macro-F1, per-table evidence coverage, false negatives, and false positives before promoting any threshold to a stable default.
-- Keep the Popo strict candidate set as the code-stage high-recall pool. Do not apply a code precision filter to remove strict candidates before Codex review unless human-label validation has demonstrated the required recall and per-table coverage.
+- The active v2 code stage has no parent/child deletion thresholds, fallback
+  floors, or per-table caps before semantic review. Scores and suggestions are
+  ordering-only metadata.
+- The former `120/60/11/3` policy is a historical compatibility workflow and
+  is not an active default.
+- Any future candidate-deletion threshold must have an explicit basis and
+  human-label validation. Report at least label-`0` recall/precision/F1,
+  macro-F1, per-table evidence coverage, false negatives, and false positives
+  before promotion.
 - Codex precision review uses a supplementary-context test: retain a child only when it adds information not already visible in the table that is needed to interpret, reproduce, or verify it.
 - Codex should reject pure table pointers, direct result restatements, promotional efficacy/capability claims, related model/method innovation outside the table's intended content, and evidence belonging to another table or experiment. A result interpretation is retained only when it adds a necessary limitation, metric behavior, dataset difference, or cross-study qualification. A table may legitimately retain zero children.
 - Existing human child labels are binding during Codex review. Codex predictions remain provisional and must never be written back as human gold.
@@ -63,13 +75,17 @@ Preferred intermediate outputs should support downstream table-reference verific
 - Clear notes about uncertainty, especially when table placement or section assignment is inferred.
 - Reference/bibliography sections should be compact outline nodes without detailed text leaves in normal table-reference verification workflows.
 - Human annotation templates should preserve full Popo parent text, exact child text offsets, table anchors, page/block metadata, and empty human-label fields. Project convention remains `0 = correct/relevant`, `1 = incorrect/irrelevant`.
-- Annotation-template summaries should include threshold rationale and sensitivity tables so future model-training runs can distinguish calibrated thresholds from temporary heuristic guardrails.
+- Annotation-template summaries should state that v2 has no pre-review
+  truncation. Any later calibrated model threshold must include its validation
+  report and version.
 - Final human-review templates should be compact. Keep `table_label`, `table_caption`, table body, full parent text, child text, offsets, hashes, Codex decision, and empty human label/rationale fields. Preserve full traceability in separate full-audit files.
 - Table captions are table-anchor fields. They must be preserved or recovered from caption resolution, but they are not child candidates and should not be reviewed as Codex semantic decisions.
 
 ## Codex Review Workflow
 
-- Code produces the high-recall candidate pool and must not remove strict candidates before human-label calibration proves the recall and table-coverage guardrails.
+- Code produces one complete, unique-child high-recall inventory per paper and
+  must not delete candidates before human-label calibration proves recall and
+  table-coverage guardrails.
 - Codex performs semantic precision review over review packages. Use one agent per paper/package when packages are independent.
 - Use a standard prompt with placeholders for package path, output path, and slug. Do not embed historical retained counts or old decision files in a normal review prompt.
 - Previous Codex results are used only in explicit comparison/audit mode after a fresh run is materialized.
